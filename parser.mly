@@ -17,184 +17,216 @@ open Ast
 %token<string> STRINGCONST
 %token EOF
 
-/* Priorités et associativités */
-%right ASSIGN PLUSEQ MINUSEQ STAREQ SLASHEQ PERCENTEQ
-%left OR
-%left AND
-%nonassoc EQ NEQ LT LE GT GE
-%left PLUS MINUS
-%left STAR SLASH PERCENT
-%right UMINUS UNOT UDEREF UADDR
-%nonassoc CAST
-%left LBRACKET
-%left LPAR
+/* Priorités */
+/* *** CHANGEMENT: LPAR et LBRACKET doivent avoir la priorité la plus forte *** */
+%left LPAR LBRACKET
 
-%start<Ast.decl list> file
+%right UMINUS UNOT UDEREF UADDR
+%left STAR SLASH PERCENT
+%left PLUS MINUS
+%nonassoc EQ NEQ LT LE GT GE
+%left AND
+%left OR
+%right ASSIGN PLUSEQ MINUSEQ STAREQ SLASHEQ PERCENTEQ
+%nonassoc CAST
+
+%start file
+%type<Ast.decl list> file
 
 %%
 
 file:
-  | dl = list(decl_or_fundef) EOF { dl }
+  | decl_list EOF { $1 }
 
-decl_or_fundef:
-  | t = type_spec ids = separated_nonempty_list(COMMA, ID) SEMI 
-    { VarDecl(t, ids) }
-  | t = type_spec name = ID LPAR params = param_list_opt RPAR body = block
-    { FunDef(t, name, params, body) }
+/* *** CHANGEMENT: On sépare clairement fonction et variable *** */
+decl_list:
+  | /* vide */ { [] }
+  | decl decl_list { $1 :: $2 }
+
+decl:
+  | vardecl { $1 }
+  | fundef  { $1 }
+
+
+/* Déclaration de variables */
+vardecl:
+  | type_spec id_list SEMI         { VarDecl($1, $2) }
+
+/* Définition de fonction */
+fundef:
+  | type_spec ID LPAR param_list_opt RPAR block
+      { FunDef($1, $2, $4, $6) }
+
+id_list:
+  | ID { [$1] }
+  | ID COMMA id_list { $1 :: $3 }
 
 /* Types */
 type_spec:
-  | t = base_type ptrs = list(STAR) 
-    { List.fold_left (fun acc _ -> Pointer acc) t ptrs }
+  | base_type star_list 
+    { List.fold_left (fun acc _ -> Pointer acc) $1 $2 }
+
+star_list:
+  | /* vide */ { [] }
+  | STAR star_list { () :: $2 }
 
 base_type:
-  | attrs = list(type_attr) bt = base_type_keyword 
-    { 
-      (* On applique les attributs sur le type de base *)
-      (* Note: dans votre AST, Signed/Unsigned/Short/Long sont des types,
-         donc on les traite comme tels *)
-      List.fold_left (fun acc attr -> attr) bt attrs 
-    }
+  | type_attr_list base_type_keyword 
+    { $2 }
+
+type_attr_list:
+  | /* vide */ { [] }
+  | type_attr type_attr_list { $1 :: $2 }
 
 type_attr:
-  | SIGNED   { Signed }
+  | SIGNED { Signed }
   | UNSIGNED { Unsigned }
-  | SHORT    { Short }
-  | LONG     { Long }
+  | SHORT { Short }
+  | LONG { Long }
 
 base_type_keyword:
-  | VOID   { Void }
-  | CHAR   { Char }
-  | INT    { Int }
-  | FLOAT  { Float }
+  | VOID { Void }
+  | CHAR { Char }
+  | INT { Int }
+  | FLOAT { Float }
   | DOUBLE { Double }
 
 /* Paramètres de fonction */
 param_list_opt:
   | /* vide */ { [] }
-  | pl = separated_nonempty_list(COMMA, param) { pl }
+  | param_list { $1 }
 
-param:
-  | t = type_spec name = ID { (t, name) }
+param_list:
+  | type_spec ID { [($1, $2)] }
+  | type_spec ID COMMA param_list { ($1, $2) :: $4 }
 
 /* Bloc */
 block:
-  | LBRACE decls = list(var_decl) instrs = list(instr) RBRACE 
-    { Block(decls, instrs) }
+  | LBRACE var_decl_list instr_list RBRACE 
+      { Block($2, $3) }
+
+var_decl_list:
+  | /* vide */ { [] }
+  | var_decl var_decl_list { $1 :: $2 }
 
 var_decl:
-  | t = type_spec ids = separated_nonempty_list(COMMA, ID) SEMI 
-    { VarDecl(t, ids) }
+  | type_spec id_list SEMI 
+      { VarDecl($1, $2) }
 
 /* Instructions */
+instr_list:
+  | /* vide */ { [] }
+  | instr instr_list { $1 :: $2 }
+
 instr:
-  | e = expr SEMI 
-    { Expr(e) }
+  | expr SEMI 
+      { Expr($1) }
   | SEMI 
-    { Empty }
-  | b = block 
-    { b }
-  | RETURN e = expr SEMI 
-    { Return(e) }
-  | IF LPAR cond = expr RPAR then_i = instr ELSE else_i = instr
-    { If(cond, then_i, Some else_i) }
-  | IF LPAR cond = expr RPAR then_i = instr %prec ELSE
-    { If(cond, then_i, None) }
-  | WHILE LPAR cond = expr RPAR body = instr
-    { While(cond, body) }
-  | DO body = instr WHILE LPAR cond = expr RPAR SEMI
-    { DoWhile(body, cond) }
-  | FOR LPAR init = expr_opt SEMI cond = expr_opt SEMI step = expr_opt RPAR body = instr
-    { For(init, cond, step, body) }
+      { Empty }
+  | block 
+      { $1 }
+  | RETURN expr SEMI 
+      { Return($2) }
+  | IF LPAR expr RPAR instr ELSE instr
+      { If($3, $5, Some $7) }
+  | IF LPAR expr RPAR instr %prec ELSE
+      { If($3, $5, None) }
+  | WHILE LPAR expr RPAR instr
+      { While($3, $5) }
+  | DO instr WHILE LPAR expr RPAR SEMI
+      { DoWhile($2, $5) }
+  | FOR LPAR expr_opt SEMI expr_opt SEMI expr_opt RPAR instr
+      { For($3, $5, $7, $9) }
 
 expr_opt:
   | /* vide */ { None }
-  | e = expr   { Some e }
+  | expr { Some $1 }
 
 /* Expressions */
 expr:
-  /* Constantes et identifiants */
-  | i = INTCONST 
-    { Const(IntConst i) }
-  | f = FLOATCONST 
-    { Const(FloatConst f) }
-  | s = STRINGCONST 
-    { Const(StringConst s) }
-  | id = ID 
-    { Id id }
+  | INTCONST 
+      { Const(IntConst $1) }
+  | FLOATCONST 
+      { Const(FloatConst $1) }
+  | STRINGCONST 
+      { Const(StringConst $1) }
+  | ID 
+      { Id $1 }
   
-  /* Parenthèses */
-  | LPAR e = expr RPAR 
-    { Parens e }
+  | LPAR expr RPAR 
+      { Parens $2 }
   
   /* Appel de fonction */
-  | f = ID LPAR args = separated_list(COMMA, expr) RPAR
-    { Call(f, args) }
+  | ID LPAR arg_list RPAR
+      { Call($1, $3) }
   
   /* Accès tableau */
-  | arr = expr LBRACKET idx = expr RBRACKET
-    { ArrayAccess(arr, idx) }
+  | expr LBRACKET expr RBRACKET
+      { ArrayAccess($1, $3) }
   
   /* sizeof */
-  | SIZEOF LPAR t = type_spec RPAR
-    { SizeOf(t) }
+  | SIZEOF LPAR type_spec RPAR
+      { SizeOf($3) }
   
   /* Cast */
-  | LPAR t = type_spec RPAR e = expr %prec CAST
-    { Cast(t, e) }
+  | LPAR type_spec RPAR expr %prec CAST
+      { Cast($2, $4) }
   
   /* Opérateurs unaires */
-  | MINUS e = expr %prec UMINUS
-    { UnOp("-", e) }
-  | BANG e = expr %prec UNOT
-    { UnOp("!", e) }
-  | STAR e = expr %prec UDEREF
-    { UnOp("*", e) }
-  | AMPERSAND e = expr %prec UADDR
-    { UnOp("&", e) }
+  | MINUS expr %prec UMINUS
+      { UnOp("-", $2) }
+  | BANG expr %prec UNOT
+      { UnOp("!", $2) }
+  | STAR expr %prec UDEREF
+      { UnOp("*", $2) }
+  | AMPERSAND expr %prec UADDR
+      { UnOp("&", $2) }
   
-  /* Opérateurs arithmétiques */
-  | e1 = expr PLUS e2 = expr
-    { BinOp("+", e1, e2) }
-  | e1 = expr MINUS e2 = expr
-    { BinOp("-", e1, e2) }
-  | e1 = expr STAR e2 = expr
-    { BinOp("*", e1, e2) }
-  | e1 = expr SLASH e2 = expr
-    { BinOp("/", e1, e2) }
-  | e1 = expr PERCENT e2 = expr
-    { BinOp("%", e1, e2) }
+  /* Opérateurs binaires */
+  | expr PLUS expr
+      { BinOp("+", $1, $3) }
+  | expr MINUS expr
+      { BinOp("-", $1, $3) }
+  | expr STAR expr
+      { BinOp("*", $1, $3) }
+  | expr SLASH expr
+      { BinOp("/", $1, $3) }
+  | expr PERCENT expr
+      { BinOp("%", $1, $3) }
   
-  /* Opérateurs de comparaison */
-  | e1 = expr LT e2 = expr
-    { BinOp("<", e1, e2) }
-  | e1 = expr GT e2 = expr
-    { BinOp(">", e1, e2) }
-  | e1 = expr LE e2 = expr
-    { BinOp("<=", e1, e2) }
-  | e1 = expr GE e2 = expr
-    { BinOp(">=", e1, e2) }
-  | e1 = expr EQ e2 = expr
-    { BinOp("==", e1, e2) }
-  | e1 = expr NEQ e2 = expr
-    { BinOp("!=", e1, e2) }
+  | expr LT expr
+      { BinOp("<", $1, $3) }
+  | expr GT expr
+      { BinOp(">", $1, $3) }
+  | expr LE expr
+      { BinOp("<=", $1, $3) }
+  | expr GE expr
+      { BinOp(">=", $1, $3) }
+  | expr EQ expr
+      { BinOp("==", $1, $3) }
+  | expr NEQ expr
+      { BinOp("!=", $1, $3) }
   
-  /* Opérateurs logiques */
-  | e1 = expr AND e2 = expr
-    { BinOp("&&", e1, e2) }
-  | e1 = expr OR e2 = expr
-    { BinOp("||", e1, e2) }
+  | expr AND expr
+      { BinOp("&&", $1, $3) }
+  | expr OR expr
+      { BinOp("||", $1, $3) }
   
-  /* Opérateurs d'affectation */
-  | e1 = expr ASSIGN e2 = expr
-    { BinOp("=", e1, e2) }
-  | e1 = expr PLUSEQ e2 = expr
-    { BinOp("+=", e1, e2) }
-  | e1 = expr MINUSEQ e2 = expr
-    { BinOp("-=", e1, e2) }
-  | e1 = expr STAREQ e2 = expr
-    { BinOp("*=", e1, e2) }
-  | e1 = expr SLASHEQ e2 = expr
-    { BinOp("/=", e1, e2) }
-  | e1 = expr PERCENTEQ e2 = expr
-    { BinOp("%=", e1, e2) }
+  /* Affectations */
+  | expr ASSIGN expr
+      { BinOp("=", $1, $3) }
+  | expr PLUSEQ expr
+      { BinOp("+=", $1, $3) }
+  | expr MINUSEQ expr
+      { BinOp("-=", $1, $3) }
+  | expr STAREQ expr
+      { BinOp("*=", $1, $3) }
+  | expr SLASHEQ expr
+      { BinOp("/=", $1, $3) }
+  | expr PERCENTEQ expr
+      { BinOp("%=", $1, $3) }
+
+arg_list:
+  | /* vide */ { [] }
+  | expr { [$1] }
+  | expr COMMA arg_list { $1 :: $3 }

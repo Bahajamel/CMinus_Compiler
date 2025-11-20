@@ -11,9 +11,13 @@ let parse_with_error lexbuf =
       Printf.fprintf stderr "%a: lexical error: %s\n"
         print_position lexbuf msg;
       exit 1
-  | Parser.Error ->
-      Printf.fprintf stderr "%a: syntax error\n"
-        print_position lexbuf;
+  | Failure msg ->
+      Printf.fprintf stderr "%a: syntax error: %s\n"
+        print_position lexbuf msg;
+      exit 1
+  | e ->
+      Printf.fprintf stderr "%a: error: %s\n"
+        print_position lexbuf (Printexc.to_string e);
       exit 1
 
 let () =
@@ -31,5 +35,5 @@ let () =
   close_in inx;
   
   Printf.printf "=== Abstract Syntax Tree ===\n\n";
-  List.iter (Ast.print_decl 0) ast;
+  List.iter Ast.print_decl ast;
   Printf.printf "\n=== Parsing successful! ===\n"

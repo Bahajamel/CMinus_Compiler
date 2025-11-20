@@ -1,5 +1,5 @@
 {
-open Parser_cminus
+open Parser
 open Lexing
 
 exception Lexing_error of string

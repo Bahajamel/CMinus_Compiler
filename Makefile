@@ -1,5 +1,5 @@
 OCAMLC=ocamlc
-MENHIR=menhir
+OCAMLYACC=ocamlyacc
 OCAMLLEX=ocamllex
 
 SOURCES=ast.ml parser.ml lexer.ml main.ml
@@ -9,7 +9,7 @@ EXEC=cminus_parser
 all: $(EXEC)
 
 parser.ml parser.mli: parser.mly
-	$(MENHIR) parser.mly
+	$(OCAMLYACC) parser.mly
 
 lexer.ml: lexer.mll
 	$(OCAMLLEX) lexer.mll
