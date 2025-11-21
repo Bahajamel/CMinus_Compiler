@@ -1,3 +1,6 @@
+(* Interface pour le module Ast *)
+
+(* Types de base du langage C *)
 type ctype =
   | Void
   | Char
@@ -10,11 +13,13 @@ type ctype =
   | Short
   | Long
 
+(* Constantes *)
 type constant =
   | IntConst of int
   | FloatConst of float
   | StringConst of string
 
+(* Expressions *)
 type expr =
   | Id of string
   | Const of constant
@@ -26,6 +31,7 @@ type expr =
   | Cast of ctype * expr
   | Parens of expr
 
+(* Instructions *)
 type instr =
   | Expr of expr
   | Empty
@@ -36,10 +42,21 @@ type instr =
   | DoWhile of instr * expr
   | For of expr option * expr option * expr option * instr
 
+(* Déclarations *)
 and decl =
   | VarDecl of ctype * string list
+  | VarDeclInit of ctype * string * expr
   | FunDef of ctype * string * (ctype * string) list * instr
 
+(* Fonctions de conversion en chaînes *)
+val string_of_type : ctype -> string
+val string_of_const : constant -> string
+val string_of_expr : expr -> string
+
+(* Fonctions d'affichage pour le débogage *)
+val print_type : ctype -> unit
+val print_const : constant -> unit
 val print_expr : expr -> unit
-val print_instr : instr -> unit
-val print_decl : decl -> unit
+val print_instr : int -> instr -> unit
+val print_decl : int -> decl -> unit
+val print_program : decl list -> unit

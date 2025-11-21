@@ -31,9 +31,17 @@ let () =
   let lexbuf = Lexing.from_channel inx in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
   
+  (* Parse le fichier *)
   let ast = parse_with_error lexbuf in
   close_in inx;
+
+  (* === Appel de l'analyse des scopes === *)
+  Scope.check_scope ast;
   
+  (* === Appel de l'analyse des types === *)
+  Typing.check_types ast;
+
+  (* === Affichage de l'AST === *)
   Printf.printf "=== Abstract Syntax Tree ===\n\n";
-  List.iter Ast.print_decl ast;
+  List.iter (fun decl -> Ast.print_decl 0 decl) ast;
   Printf.printf "\n=== Parsing successful! ===\n"

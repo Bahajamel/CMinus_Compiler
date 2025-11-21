@@ -1,36 +1,61 @@
-int x;
-int y;
-int i; 
-int add(int a, int b) { return a + b; }
-int main() {
-    x = 1;
-    y = 3;
+//#include <stdio.h>
+//#include <stdlib.h>
+//#define DIM 3
+int *malloc(int i) {}
+int DIM;
+int *NULL;
+void printf(char *format, int i) {}
+void free(int *p) {}
 
-    x = add(x, y);
-     {
-        int z;
-        z = x + y;
-        y = z;
-    }
-     if (x > y) {
-        x = x - 1;
-    } else {
-        y = y - 1;
-    }
-    while (x < 10) {
-        x = x + 1;
-    }
-     do {
-        y = y - 1;
-    } while (y > 0);
+//typedef int vector[DIM];
 
-   for (i = 0; i < 5; i = i + 1) {
-        x = x + i;
-    }
-    int * p;
-    
-
-    
-    return 0;
+/*@ requires nothing;
+  assigns nothing;
+  ensures returns a vector containing only v */
+int *vector_of(int v) {
+  int *real_res;
+  int i;
+  real_res = malloc(DIM * sizeof (int));
+  if (real_res != NULL)
+    for (i = 0; i < DIM; i += 1)
+      real_res[i] = v;
+  return real_res;
+}
+/*
+void print_vector(int *v) {
+  int i;
+  for (i = 0; i < DIM; i += 1)
+    printf("%d ", v[i]);
 }
 
+int main() {
+  int *t;
+  int *u;
+  t = NULL;
+  u = NULL;
+  t = vector_of(42);
+  if (t == NULL) {
+    printf("Cannot allocate %d memory for t\n", DIM);
+    return 12;
+  }
+  printf("%d\n", t[0]);
+  printf("%d\n", t[1]);
+  printf("%d\n", t[2]);
+  u = vector_of(26);
+  if (u == NULL) {
+    printf("Cannot allocate %d memory for u\n", DIM);
+    return 12;
+  }
+  printf("%d\n", u[0]);
+  printf("%d\n", u[1]);
+  printf("%d\n", u[2]);
+  u[1] = 2;
+  free(u);
+  u = NULL;
+  printf("%d\n", u[0]);
+  printf("%d\n", u[1]);
+  printf("%d\n", u[2]);
+  print_vector(t);
+  return 0;
+}
+*/
