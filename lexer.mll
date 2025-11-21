@@ -42,6 +42,8 @@ rule token = parse
   | '*'  { STAR }
   | '/'  { SLASH }
   | '%'  { PERCENT }
+  | "++"    { INC }
+  |"--"    { DEC }
   
   (* Opérateurs de comparaison *)
   | "==" { EQ }
