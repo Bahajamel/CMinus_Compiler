@@ -1,23 +1,23 @@
 open Ast
 module StringMap = Map.Make(String)
+module StringSet = Set.Make(String)
 
 exception TypeError of string
 
-(* types simplifiés *)
+(* ---------- Types internes simplifiés ---------- *)
+
 type simple_type =
   | TInt
   | TFloat
   | TVoid
   | TPointer of simple_type
 
-(* convertir ctype AST -> simple_type *)
 let rec to_simple_type = function
   | Int | Char | Short | Long | Signed | Unsigned -> TInt
   | Float | Double -> TFloat
   | Void -> TVoid
   | Pointer t -> TPointer (to_simple_type t)
 
-(* comparaisons / compatibilités *)
 let rec simple_eq a b =
   match a, b with
   | TInt, TInt -> true
@@ -26,44 +26,67 @@ let rec simple_eq a b =
   | TPointer x, TPointer y -> simple_eq x y
   | _ -> false
 
-(* compatibilité (ex: int -> float acceptable) *)
+(* compatibilité (promotion int -> float autorisée) *)
 let compatible expected actual =
-  if simple_eq expected actual then true
-  else
-    match expected, actual with
-    | TFloat, TInt -> true   (* promotion int -> float autorisée *)
-    | _ -> false
+  simple_eq expected actual
+  || match expected, actual with
+     | TFloat, TInt -> true
+     | _ -> false
 
-(* résultat arithmétique : si un opérande est float -> float, sinon int *)
 let result_arith t1 t2 =
   match t1, t2 with
   | TFloat, _ | _, TFloat -> TFloat
   | TInt, TInt -> TInt
-  | _ -> raise (TypeError "Invalid types for arithmetic operation")
+  | _ -> raise (TypeError "Invalid arithmetic types")
 
-(* environnement = variables + fonctions *)
+(* ---------- Environnement avec scopes ---------- *)
+
 type env = {
-  vars : ctype StringMap.t;
-  funcs : (ctype * ctype list) StringMap.t;  (* nom -> (ret_type, param_types) *)
+  vars  : ctype StringMap.t;                      (* toutes les variables visibles *)
+  funcs : (ctype * ctype list) StringMap.t;       (* nom -> (ret, params) *)
+  scope : StringSet.t;                            (* noms déclarés dans le bloc courant *)
 }
 
-let empty_env = { vars = StringMap.empty; funcs = StringMap.empty }
+let empty_env = {
+  vars  = StringMap.empty;
+  funcs = StringMap.empty;
+  scope = StringSet.empty;
+}
 
+(* ajout dans le scope courant : interdit redeclaration locale,
+   mais autorise shadowing des variables de blocs extérieurs *)
 let add_var env name typ =
-  if StringMap.mem name env.vars then
-    raise (TypeError ("Variable "^name^" redeclared"));
-  { env with vars = StringMap.add name typ env.vars }
+  if StringSet.mem name env.scope then
+    raise (TypeError ("Variable "^name^" redeclared"))
+  else
+    {
+      env with
+      vars  = StringMap.add name typ env.vars;
+      scope = StringSet.add name env.scope;
+    }
 
-(* Nouvelle fonction : ajouter une variable sans check de redéclaration (pour scope local) *)
+(* shadowing explicite (utilisé rarement si besoin),
+   mais on garde aussi la protection "même scope interdit" *)
 let add_var_shadowing env name typ =
-  { env with vars = StringMap.add name typ env.vars }
+  if StringSet.mem name env.scope then
+    raise (TypeError ("Variable "^name^" redeclared"))
+  else
+    {
+      env with
+      vars  = StringMap.add name typ env.vars;
+      scope = StringSet.add name env.scope;
+    }
 
 let add_func env name ret params =
   if StringMap.mem name env.funcs then
-    raise (TypeError ("Function "^name^" already declared"));
+    raise (TypeError ("Function "^name^" redeclared"));
   { env with funcs = StringMap.add name (ret, params) env.funcs }
 
-(* Vérification des expressions *)
+(* entrer dans un nouveau bloc : même vars/funcs, scope vidé *)
+let enter_block env = { env with scope = StringSet.empty }
+
+(* ---------- Typage des expressions ---------- *)
+
 let rec check_expr env = function
   | Id x ->
       if not (StringMap.mem x env.vars) then
@@ -72,94 +95,98 @@ let rec check_expr env = function
 
   | Const c ->
       (match c with
-       | IntConst _ -> TInt
+       | IntConst _   -> TInt
        | FloatConst _ -> TFloat
-       | StringConst _ -> TPointer TInt)  (* chaîne -> pointeur sur char (char ≡ TInt ici) *)
+       | StringConst _ -> TPointer TInt)  (* simplification : char* -> int* *)
 
-  | Parens e ->
-      check_expr env e
+  | Parens e -> check_expr env e
 
   | BinOp(op, e1, e2) ->
       let t1 = check_expr env e1 in
       let t2 = check_expr env e2 in
-      (match op with
-       | "+" | "-" | "*" | "/" ->
-           (* autoriser int/float mixte *)
-           let _ = match t1, t2 with
-             | TInt, TInt | TFloat, TFloat | TInt, TFloat | TFloat, TInt -> ()
-             | _ -> raise (TypeError ("Arithmetic operator "^op^" type mismatch"))
-           in
-           result_arith t1 t2
+      begin match op with
+      | "+" | "-" | "*" | "/" ->
+          (match t1, t2 with
+           | TInt, TInt
+           | TFloat, TFloat
+           | TInt, TFloat
+           | TFloat, TInt -> ()
+           | _ -> raise (TypeError "Arithmetic type mismatch"));
+          result_arith t1 t2
 
-       | "%" ->
-           if t1 = TInt && t2 = TInt then TInt
-           else raise (TypeError "Modulo operator '%' requires integers")
+      | "%" ->
+          if t1 = TInt && t2 = TInt then TInt
+          else raise (TypeError "Modulo requires integers")
 
-       | "==" | "!=" | "<" | "<=" | ">" | ">=" ->
-           if simple_eq t1 t2 || (t1 = TFloat && t2 = TInt) || (t1 = TInt && t2 = TFloat) then TInt
-           else raise (TypeError ("Comparison "^op^" type mismatch"))
+      | "==" | "!=" | "<" | "<=" | ">" | ">=" ->
+          if compatible t1 t2 || compatible t2 t1 then TInt
+          else raise (TypeError "Comparison type mismatch")
 
-       | "&&" | "||" ->
-           if t1 = TInt && t2 = TInt then TInt
-           else raise (TypeError ("Logical operator "^op^" requires integers"))
+      | "&&" | "||" ->
+          if t1 = TInt && t2 = TInt then TInt
+          else raise (TypeError "Logical operator requires int")
 
-       | "=" | "+=" | "-=" | "*=" | "/=" | "%=" ->
-           (* vérifier que e1 est une l-value et que types compatibles *)
-           let is_lvalue = match e1 with
-             | Id _ -> true
-             | ArrayAccess(_, _) -> true
-             | UnOp("*", _) -> true
-             | _ -> false
-           in
-           if not is_lvalue then raise (TypeError "Left-hand side of assignment is not an l-value");
-           if not (compatible t1 t2) then
-             raise (TypeError ("Assignment operator "^op^" type mismatch"));
-           t1
-        | _ -> raise (TypeError ("Unknown binary operator "^op)))
+      | "=" | "+=" | "-=" | "*=" | "/=" | "%=" ->
+          let is_lvalue =
+            match e1 with
+            | Id _ | ArrayAccess _ | UnOp("*", _) -> true
+            | _ -> false
+          in
+          if not is_lvalue then
+            raise (TypeError "Assignment to non-lvalue");
+          if not (compatible t1 t2) then
+            raise (TypeError "Assignment type mismatch");
+          t1
 
-   | UnOp(op, e) ->
-    let t = check_expr env e in
-    begin match op with
-    | "++" | "--" ->
-        if t = TInt then TInt
-        else raise(TypeError("Unary " ^ op ^ " requires int"))
-    | "post++" | "post--" ->
-        if t = TInt then TInt
-        else raise(TypeError("Unary " ^ op ^ " requires int"))
-    | "-" ->
-        if t = TInt then TInt else raise(TypeError("Unary - requires int"))
-    | "!" ->
-        if t = TInt then TInt else raise(TypeError("Unary ! requires int"))
-    | "*" ->
-        begin match t with
-        | TPointer t' -> t'
-        | _ -> raise(TypeError("Unary * requires pointer"))
-        end
-    | "&" ->
-        TPointer t
-    | _ ->
-        raise(TypeError("Unknown unary operator " ^ op))
-    end
+      | _ ->
+          raise (TypeError ("Unknown binary operator "^op))
+      end
 
+  | UnOp(op, e) ->
+      let t = check_expr env e in
+      begin match op with
+      | "++" | "--" | "post++" | "post--" ->
+          if t = TInt then TInt
+          else raise (TypeError "++/-- require int")
+
+      | "-" ->
+          if t = TInt then TInt
+          else raise (TypeError "Unary - requires int")
+
+      | "!" ->
+          if t = TInt then TInt
+          else raise (TypeError "Unary ! requires int")
+
+      | "*" ->
+          (match t with
+           | TPointer t' -> t'
+           | _ -> raise (TypeError "Unary * requires pointer"))
+
+      | "&" -> TPointer t
+
+      | _ ->
+          raise (TypeError ("Unknown unary operator "^op))
+      end
 
   | Call(name, args) ->
       if not (StringMap.mem name env.funcs) then
-        raise (TypeError ("Function "^name^" not declared"));
-      let (ret_type, param_types) = StringMap.find name env.funcs in
-      if List.length args <> List.length param_types then
-        raise (TypeError ("Function "^name^" called with wrong number of arguments"));
-      List.iter2 (fun arg t ->
-        let arg_t = check_expr env arg in
-        if not (compatible (to_simple_type t) arg_t) then
-          raise (TypeError ("Function "^name^" argument type mismatch"))
-      ) args param_types;
-      to_simple_type ret_type
+        raise (TypeError ("Unknown function "^name));
+      let (ret, params) = StringMap.find name env.funcs in
+      if List.length args <> List.length params then
+        raise (TypeError ("Wrong number of arguments for "^name));
+      List.iter2
+        (fun arg tformal ->
+           let targ = check_expr env arg in
+           if not (compatible (to_simple_type tformal) targ) then
+             raise (TypeError ("Argument type mismatch in call to "^name)))
+        args params;
+      to_simple_type ret
 
   | ArrayAccess(arr, idx) ->
       let t_arr = check_expr env arr in
       let t_idx = check_expr env idx in
-      (match t_arr with
-       | TPointer t when t_idx = TInt -> t
+      (match t_arr, t_idx with
+       | TPointer t, TInt -> t
        | _ -> raise (TypeError "Array access type mismatch"))
 
   | SizeOf _ -> TInt
@@ -168,111 +195,149 @@ let rec check_expr env = function
       ignore (check_expr env e);
       to_simple_type t
 
-(* Vérification des instructions *)
-let rec check_instr env = function
-  | Expr e -> ignore (check_expr env e)
+(* ---------- Typage des instructions ---------- *)
+
+let rec check_instr ?(ret_type : simple_type option = None) env = function
+  | Expr e ->
+      ignore (check_expr env e)
+
   | Empty -> ()
-  | Return e -> ignore (check_expr env e)
+
+  | Return e ->
+      let te = check_expr env e in
+      (match ret_type with
+       | Some t when not (compatible t te) ->
+           raise (TypeError "Return type mismatch")
+       | _ -> ())
 
   | Block(decls, instrs) ->
-      let env_block =
-        List.fold_left (fun e decl ->
-          match decl with
-          | VarDecl(t, names) ->
-              List.fold_left (fun e n -> add_var e n t) e names
+      (* nouveau bloc : reset du scope, mais visibilité des vars extérieures *)
+      let env_block_base = enter_block env in
+      let env' =
+        List.fold_left
+          (fun env d ->
+             match d with
+             | VarDecl(t, names) ->
+                 List.fold_left (fun e n -> add_var e n t) env names
 
-          | VarDeclInit(t, name, expr) ->
-              let te = check_expr e expr in
-              if not (compatible (to_simple_type t) te) then
-                raise (TypeError "Initializer type mismatch");
-              add_var e name t
+             | VarDeclInit(t, n, e0) ->
+                 let te = check_expr env e0 in
+                 if not (compatible (to_simple_type t) te) then
+                   raise (TypeError "Initializer type mismatch");
+                 add_var env n t
 
-          | FunDef _ -> e
-        ) env decls
+             | FunDef _ -> env)
+          env_block_base
+          decls
       in
-      List.iter (check_instr env_block) instrs
+      List.iter (check_instr ~ret_type env') instrs
 
-  | If(cond, then_i, else_opt) ->
+  | If(cond, tbranch, ebranch) ->
       if check_expr env cond <> TInt then
         raise (TypeError "If condition must be int");
-      check_instr env then_i;
-      (match else_opt with Some e -> check_instr env e | None -> ())
+      check_instr ~ret_type env tbranch;
+      (match ebranch with
+       | Some b -> check_instr ~ret_type env b
+       | None -> ())
 
   | While(cond, body) ->
       if check_expr env cond <> TInt then
         raise (TypeError "While condition must be int");
-      check_instr env body
+      check_instr ~ret_type env body
 
   | DoWhile(body, cond) ->
-      check_instr env body;
+      check_instr ~ret_type env body;
       if check_expr env cond <> TInt then
         raise (TypeError "DoWhile condition must be int")
 
   | For(init, cond, step, body) ->
       (match init with Some e -> ignore (check_expr env e) | None -> ());
-      (match cond with Some e ->
-         if check_expr env e <> TInt then
-           raise (TypeError "For condition must be int")
+      (match cond with
+       | Some e ->
+           if check_expr env e <> TInt then
+             raise (TypeError "For condition must be int")
        | None -> ());
       (match step with Some e -> ignore (check_expr env e) | None -> ());
-      check_instr env body
+      check_instr ~ret_type env body
 
-let check_types file =
-  (* Étape 1 : collecter toutes les variables globales *)
-  let env =
-    List.fold_left (fun env decl ->
-      match decl with
-      | VarDecl(t, names) ->
-          List.fold_left (fun e n -> add_var e n t) env names
-      | VarDeclInit(t, name, expr) ->
-          let te = check_expr env expr in
+(* ---------- Typage global ---------- *)
+
+let check_types (file : decl list) =
+  (* PASS 1 : variables globales + signatures des fonctions *)
+  let env1 =
+    List.fold_left
+      (fun e d ->
+         match d with
+         | VarDecl(t, names) ->
+             List.fold_left (fun e n -> add_var e n t) e names
+
+         | VarDeclInit(t, n, _) ->
+             add_var e n t
+
+         | FunDef(ret, name, params, _) ->
+             add_func e name ret (List.map fst params))
+      empty_env
+      file
+  in
+
+  (* PASS 2 : initialisations globales *)
+  List.iter
+    (function
+      | VarDeclInit(t, n, expr) ->
+          let te = check_expr env1 expr in
           if not (compatible (to_simple_type t) te) then
-            raise (TypeError ("Global initializer type mismatch for "^name));
-          add_var env name t
-      | FunDef _ -> env
-    ) empty_env file
-  in
-  
-  (* Étape 2 : ajouter toutes les fonctions *)
-  let env =
-    List.fold_left (fun env decl ->
-      match decl with
-      | FunDef(ret, name, params, _) ->
-          add_func env name ret (List.map fst params)
-      | _ -> env
-    ) env file
-  in
-  
-  (* Étape 3 : vérifier les fonctions *)
-  List.iter (fun decl ->
-    match decl with
-    | FunDef(_, _, params, body) ->
-        (* Créer un environnement local pour la fonction : garder les fonctions globales, créer scope local pour vars *)
-        let env_with_params =
-          List.fold_left (fun e (t,n) -> 
-            (* Permettre le shadowing des variables globales par les paramètres *)
-            add_var_shadowing e n t
-          ) { vars = StringMap.empty; funcs = env.funcs } params
-        in
-        let env_fun = env_with_params in
-        
-        (match body with
-         | Block(local_decls, instrs) ->
-             let env_block =
-               List.fold_left (fun e decl ->
-                 match decl with
-                 | VarDecl(t, names) ->
-                     List.fold_left (fun e n -> add_var_shadowing e n t) e names
-                 | VarDeclInit(t, name, expr) ->
-                     let te = check_expr e expr in
-                     if not (compatible (to_simple_type t) te) then
-                       raise (TypeError "Initializer type mismatch");
-                     add_var_shadowing e name t
-                 | FunDef _ -> e
-               ) env_fun local_decls
-             in
-             List.iter (check_instr env_block) instrs
-         | _ -> check_instr env_fun body)
-    | VarDecl _ | VarDeclInit _ -> ()
-  ) file;
-  Printf.printf "Type checking OK !\n"
+            raise (TypeError ("Type mismatch in global initializer for "^n))
+      | _ -> ())
+    file;
+
+  (* PASS 3 : corps des fonctions *)
+  List.iter
+    (function
+      | FunDef(ret, name, params, body) ->
+          (* nouvel environnement de fonction :
+             - mêmes vars/funcs que env1 (globales visibles)
+             - scope vidé
+             - on ajoute les paramètres dans ce nouveau scope
+          *)
+          let env_fun_base = { env1 with scope = StringSet.empty } in
+          let env_with_params =
+            List.fold_left
+              (fun e (t, n) -> add_var e n t)
+              env_fun_base
+              params
+          in
+          (match body with
+           | Block(local_decls, instrs) ->
+               (* corps de fonction = même scope que les paramètres *)
+               let env_body =
+                 List.fold_left
+                   (fun env d ->
+                      match d with
+                      | VarDecl(t, names) ->
+                          List.fold_left (fun e n -> add_var e n t) env names
+
+                      | VarDeclInit(t, n, e0) ->
+                          let te = check_expr env e0 in
+                          if not (compatible (to_simple_type t) te) then
+                            raise (TypeError "Initializer type mismatch");
+                          add_var env n t
+
+                      | FunDef _ -> env)
+                   env_with_params
+                   local_decls
+               in
+               List.iter
+                 (check_instr ~ret_type:(Some (to_simple_type ret)) env_body)
+                 instrs
+
+           | _ ->
+               (* cas où body n'est pas un Block (rare avec ton AST) *)
+               check_instr
+                 ~ret_type:(Some (to_simple_type ret))
+                 env_with_params
+                 body)
+
+      | _ -> ())
+    file;
+
+  Printf.printf "Type checking OK!\n"

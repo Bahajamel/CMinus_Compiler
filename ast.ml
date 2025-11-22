@@ -1,4 +1,3 @@
-(* Types de base du langage C *)
 
 type ctype =
   | Void
@@ -28,6 +27,7 @@ type expr =
   | Cast of ctype * expr
   | Parens of expr
 
+
 type instr =
   | Expr of expr
   | Empty
@@ -52,10 +52,10 @@ let rec string_of_type = function
   | Float -> "float"
   | Double -> "double"
   | Pointer t -> (string_of_type t) ^ "*"
-  | Signed -> "signed"
-  | Unsigned -> "unsigned"
-  | Short -> "short"
-  | Long -> "long"
+  | Signed -> "signed int"
+  | Unsigned -> "unsigned int"
+  | Short -> "short int"
+  | Long -> "long int"
 
 let string_of_const = function
   | IntConst i -> string_of_int i
@@ -250,3 +250,4 @@ let print_program decls =
   print_endline "=== Programme ===";
   List.iter (print_decl 0) decls;
   print_endline "================"
+

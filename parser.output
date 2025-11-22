@@ -1,0 +1,3058 @@
+   0  $accept : %entry% $end
+
+   1  file : decl_list EOF
+
+   2  decl_list :
+   3            | decl decl_list
+
+   4  decl : vardecl
+   5       | fundef
+
+   6  vardecl : type_spec declarator_list SEMI
+   7          | type_spec ID ASSIGN expr SEMI
+
+   8  declarator_list : ID
+   9                  | ID COMMA declarator_list
+
+  10  fundef : type_spec ID LPAR param_list_opt RPAR block
+
+  11  type_spec : type_attr_list base_type_keyword pointer_depth
+
+  12  pointer_depth :
+  13                | STAR pointer_depth
+
+  14  type_attr_list :
+  15                 | type_attr type_attr_list
+
+  16  type_attr : SIGNED
+  17            | UNSIGNED
+  18            | SHORT
+  19            | LONG
+
+  20  base_type_keyword : VOID
+  21                    | CHAR
+  22                    | INT
+  23                    | FLOAT
+  24                    | DOUBLE
+
+  25  param_list_opt :
+  26                 | param_list
+
+  27  param_list : param
+  28             | param COMMA param_list
+
+  29  param : type_spec ID
+
+  30  block : LBRACE var_decl_list instr_list RBRACE
+
+  31  var_decl_list :
+  32                | var_decl var_decl_list
+
+  33  var_decl : type_spec declarator_list SEMI
+  34           | type_spec ID ASSIGN expr SEMI
+
+  35  instr_list :
+  36             | instr instr_list
+
+  37  instr : expr SEMI
+  38        | SEMI
+  39        | block
+  40        | RETURN expr SEMI
+  41        | IF LPAR expr RPAR instr ELSE instr
+  42        | IF LPAR expr RPAR instr
+  43        | WHILE LPAR expr RPAR instr
+  44        | DO instr WHILE LPAR expr RPAR SEMI
+  45        | FOR LPAR for_init SEMI expr_opt SEMI expr_opt RPAR instr
+
+  46  expr_opt :
+  47           | expr
+
+  48  for_init :
+  49           | type_spec ID ASSIGN expr
+  50           | type_spec declarator_list
+  51           | for_init_expr
+
+  52  for_init_expr : assign_expr
+
+  53  assign_expr : or_expr
+  54              | or_expr ASSIGN assign_expr
+  55              | or_expr PLUSEQ assign_expr
+  56              | or_expr MINUSEQ assign_expr
+  57              | or_expr STAREQ assign_expr
+  58              | or_expr SLASHEQ assign_expr
+  59              | or_expr PERCENTEQ assign_expr
+
+  60  or_expr : and_expr
+  61          | or_expr OR and_expr
+
+  62  and_expr : eq_expr
+  63           | and_expr AND eq_expr
+
+  64  eq_expr : rel_expr
+  65          | eq_expr EQ rel_expr
+  66          | eq_expr NEQ rel_expr
+
+  67  rel_expr : add_expr
+  68           | rel_expr LT add_expr
+  69           | rel_expr GT add_expr
+  70           | rel_expr LE add_expr
+  71           | rel_expr GE add_expr
+
+  72  add_expr : mult_expr
+  73           | add_expr PLUS mult_expr
+  74           | add_expr MINUS mult_expr
+
+  75  mult_expr : unary_expr
+  76            | mult_expr STAR unary_expr
+  77            | mult_expr SLASH unary_expr
+  78            | mult_expr PERCENT unary_expr
+
+  79  unary_expr : postfix_expr
+  80             | INC unary_expr
+  81             | DEC unary_expr
+  82             | MINUS unary_expr
+  83             | BANG unary_expr
+  84             | STAR unary_expr
+  85             | AMPERSAND unary_expr
+  86             | SIZEOF LPAR type_spec RPAR
+  87             | LPAR type_spec RPAR unary_expr
+
+  88  postfix_expr : call_expr
+  89               | primary_expr
+  90               | postfix_expr LBRACKET expr RBRACKET
+  91               | postfix_expr INC
+  92               | postfix_expr DEC
+
+  93  call_expr : ID LPAR arg_list RPAR
+
+  94  primary_expr : INTCONST
+  95               | FLOATCONST
+  96               | STRINGCONST
+  97               | ID
+  98               | LPAR expr RPAR
+
+  99  expr : assign_expr
+
+ 100  arg_list :
+ 101           | non_empty_arg_list
+
+ 102  non_empty_arg_list : expr
+ 103                     | expr COMMA non_empty_arg_list
+
+ 104  %entry% : '\001' file
+
+state 0
+	$accept : . %entry% $end  (0)
+
+	'\001'  shift 1
+	.  error
+
+	%entry%  goto 2
+
+
+state 1
+	%entry% : '\001' . file  (104)
+	decl_list : .  (2)
+	type_attr_list : .  (14)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+	EOF  reduce 2
+
+	file  goto 7
+	decl_list  goto 8
+	decl  goto 9
+	vardecl  goto 10
+	fundef  goto 11
+	type_spec  goto 12
+	type_attr_list  goto 13
+	type_attr  goto 14
+
+
+state 2
+	$accept : %entry% . $end  (0)
+
+	$end  accept
+
+
+state 3
+	type_attr : SIGNED .  (16)
+
+	.  reduce 16
+
+
+state 4
+	type_attr : UNSIGNED .  (17)
+
+	.  reduce 17
+
+
+state 5
+	type_attr : SHORT .  (18)
+
+	.  reduce 18
+
+
+state 6
+	type_attr : LONG .  (19)
+
+	.  reduce 19
+
+
+state 7
+	%entry% : '\001' file .  (104)
+
+	.  reduce 104
+
+
+state 8
+	file : decl_list . EOF  (1)
+
+	EOF  shift 15
+	.  error
+
+
+state 9
+	decl_list : decl . decl_list  (3)
+	decl_list : .  (2)
+	type_attr_list : .  (14)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+	EOF  reduce 2
+
+	decl_list  goto 16
+	decl  goto 9
+	vardecl  goto 10
+	fundef  goto 11
+	type_spec  goto 12
+	type_attr_list  goto 13
+	type_attr  goto 14
+
+
+state 10
+	decl : vardecl .  (4)
+
+	.  reduce 4
+
+
+state 11
+	decl : fundef .  (5)
+
+	.  reduce 5
+
+
+state 12
+	vardecl : type_spec . declarator_list SEMI  (6)
+	vardecl : type_spec . ID ASSIGN expr SEMI  (7)
+	fundef : type_spec . ID LPAR param_list_opt RPAR block  (10)
+
+	ID  shift 17
+	.  error
+
+	declarator_list  goto 18
+
+
+state 13
+	type_spec : type_attr_list . base_type_keyword pointer_depth  (11)
+
+	VOID  shift 19
+	CHAR  shift 20
+	INT  shift 21
+	FLOAT  shift 22
+	DOUBLE  shift 23
+	.  error
+
+	base_type_keyword  goto 24
+
+
+state 14
+	type_attr_list : type_attr . type_attr_list  (15)
+	type_attr_list : .  (14)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+
+	type_attr_list  goto 25
+	type_attr  goto 14
+
+
+state 15
+	file : decl_list EOF .  (1)
+
+	.  reduce 1
+
+
+state 16
+	decl_list : decl decl_list .  (3)
+
+	.  reduce 3
+
+
+state 17
+	vardecl : type_spec ID . ASSIGN expr SEMI  (7)
+	declarator_list : ID .  (8)
+	declarator_list : ID . COMMA declarator_list  (9)
+	fundef : type_spec ID . LPAR param_list_opt RPAR block  (10)
+
+	ASSIGN  shift 26
+	LPAR  shift 27
+	COMMA  shift 28
+	SEMI  reduce 8
+
+
+state 18
+	vardecl : type_spec declarator_list . SEMI  (6)
+
+	SEMI  shift 29
+	.  error
+
+
+state 19
+	base_type_keyword : VOID .  (20)
+
+	.  reduce 20
+
+
+state 20
+	base_type_keyword : CHAR .  (21)
+
+	.  reduce 21
+
+
+state 21
+	base_type_keyword : INT .  (22)
+
+	.  reduce 22
+
+
+state 22
+	base_type_keyword : FLOAT .  (23)
+
+	.  reduce 23
+
+
+state 23
+	base_type_keyword : DOUBLE .  (24)
+
+	.  reduce 24
+
+
+state 24
+	type_spec : type_attr_list base_type_keyword . pointer_depth  (11)
+	pointer_depth : .  (12)
+
+	STAR  shift 30
+	RPAR  reduce 12
+	ID  reduce 12
+
+	pointer_depth  goto 31
+
+
+state 25
+	type_attr_list : type_attr type_attr_list .  (15)
+
+	.  reduce 15
+
+
+state 26
+	vardecl : type_spec ID ASSIGN . expr SEMI  (7)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 44
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 27
+	fundef : type_spec ID LPAR . param_list_opt RPAR block  (10)
+	type_attr_list : .  (14)
+	param_list_opt : .  (25)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	RPAR  reduce 25
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+
+	type_spec  goto 56
+	param_list_opt  goto 57
+	type_attr_list  goto 13
+	type_attr  goto 14
+	param_list  goto 58
+	param  goto 59
+
+
+state 28
+	declarator_list : ID COMMA . declarator_list  (9)
+
+	ID  shift 60
+	.  error
+
+	declarator_list  goto 61
+
+
+state 29
+	vardecl : type_spec declarator_list SEMI .  (6)
+
+	.  reduce 6
+
+
+state 30
+	pointer_depth : STAR . pointer_depth  (13)
+	pointer_depth : .  (12)
+
+	STAR  shift 30
+	RPAR  reduce 12
+	ID  reduce 12
+
+	pointer_depth  goto 62
+
+
+state 31
+	type_spec : type_attr_list base_type_keyword pointer_depth .  (11)
+
+	.  reduce 11
+
+
+state 32
+	unary_expr : MINUS . unary_expr  (82)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 63
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 33
+	unary_expr : STAR . unary_expr  (84)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 64
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 34
+	unary_expr : BANG . unary_expr  (83)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 65
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 35
+	unary_expr : INC . unary_expr  (80)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 66
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 36
+	unary_expr : DEC . unary_expr  (81)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 67
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 37
+	unary_expr : LPAR . type_spec RPAR unary_expr  (87)
+	primary_expr : LPAR . expr RPAR  (98)
+	type_attr_list : .  (14)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+
+	type_spec  goto 68
+	expr  goto 69
+	type_attr_list  goto 13
+	type_attr  goto 14
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 38
+	unary_expr : SIZEOF . LPAR type_spec RPAR  (86)
+
+	LPAR  shift 70
+	.  error
+
+
+state 39
+	unary_expr : AMPERSAND . unary_expr  (85)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 71
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 40
+	call_expr : ID . LPAR arg_list RPAR  (93)
+	primary_expr : ID .  (97)
+
+	LPAR  shift 72
+	PLUS  reduce 97
+	MINUS  reduce 97
+	STAR  reduce 97
+	SLASH  reduce 97
+	PERCENT  reduce 97
+	EQ  reduce 97
+	NEQ  reduce 97
+	LT  reduce 97
+	LE  reduce 97
+	GT  reduce 97
+	GE  reduce 97
+	AND  reduce 97
+	OR  reduce 97
+	ASSIGN  reduce 97
+	PLUSEQ  reduce 97
+	MINUSEQ  reduce 97
+	STAREQ  reduce 97
+	SLASHEQ  reduce 97
+	PERCENTEQ  reduce 97
+	INC  reduce 97
+	DEC  reduce 97
+	RPAR  reduce 97
+	LBRACKET  reduce 97
+	RBRACKET  reduce 97
+	SEMI  reduce 97
+	COMMA  reduce 97
+
+
+state 41
+	primary_expr : INTCONST .  (94)
+
+	.  reduce 94
+
+
+state 42
+	primary_expr : FLOATCONST .  (95)
+
+	.  reduce 95
+
+
+state 43
+	primary_expr : STRINGCONST .  (96)
+
+	.  reduce 96
+
+
+state 44
+	vardecl : type_spec ID ASSIGN expr . SEMI  (7)
+
+	SEMI  shift 73
+	.  error
+
+
+state 45
+	expr : assign_expr .  (99)
+
+	.  reduce 99
+
+
+state 46
+	assign_expr : or_expr .  (53)
+	assign_expr : or_expr . ASSIGN assign_expr  (54)
+	assign_expr : or_expr . PLUSEQ assign_expr  (55)
+	assign_expr : or_expr . MINUSEQ assign_expr  (56)
+	assign_expr : or_expr . STAREQ assign_expr  (57)
+	assign_expr : or_expr . SLASHEQ assign_expr  (58)
+	assign_expr : or_expr . PERCENTEQ assign_expr  (59)
+	or_expr : or_expr . OR and_expr  (61)
+
+	OR  shift 74
+	ASSIGN  shift 75
+	PLUSEQ  shift 76
+	MINUSEQ  shift 77
+	STAREQ  shift 78
+	SLASHEQ  shift 79
+	PERCENTEQ  shift 80
+	RPAR  reduce 53
+	RBRACKET  reduce 53
+	SEMI  reduce 53
+	COMMA  reduce 53
+
+
+state 47
+	or_expr : and_expr .  (60)
+	and_expr : and_expr . AND eq_expr  (63)
+
+	AND  shift 81
+	OR  reduce 60
+	ASSIGN  reduce 60
+	PLUSEQ  reduce 60
+	MINUSEQ  reduce 60
+	STAREQ  reduce 60
+	SLASHEQ  reduce 60
+	PERCENTEQ  reduce 60
+	RPAR  reduce 60
+	RBRACKET  reduce 60
+	SEMI  reduce 60
+	COMMA  reduce 60
+
+
+state 48
+	and_expr : eq_expr .  (62)
+	eq_expr : eq_expr . EQ rel_expr  (65)
+	eq_expr : eq_expr . NEQ rel_expr  (66)
+
+	EQ  shift 82
+	NEQ  shift 83
+	AND  reduce 62
+	OR  reduce 62
+	ASSIGN  reduce 62
+	PLUSEQ  reduce 62
+	MINUSEQ  reduce 62
+	STAREQ  reduce 62
+	SLASHEQ  reduce 62
+	PERCENTEQ  reduce 62
+	RPAR  reduce 62
+	RBRACKET  reduce 62
+	SEMI  reduce 62
+	COMMA  reduce 62
+
+
+state 49
+	eq_expr : rel_expr .  (64)
+	rel_expr : rel_expr . LT add_expr  (68)
+	rel_expr : rel_expr . GT add_expr  (69)
+	rel_expr : rel_expr . LE add_expr  (70)
+	rel_expr : rel_expr . GE add_expr  (71)
+
+	LT  shift 84
+	LE  shift 85
+	GT  shift 86
+	GE  shift 87
+	EQ  reduce 64
+	NEQ  reduce 64
+	AND  reduce 64
+	OR  reduce 64
+	ASSIGN  reduce 64
+	PLUSEQ  reduce 64
+	MINUSEQ  reduce 64
+	STAREQ  reduce 64
+	SLASHEQ  reduce 64
+	PERCENTEQ  reduce 64
+	RPAR  reduce 64
+	RBRACKET  reduce 64
+	SEMI  reduce 64
+	COMMA  reduce 64
+
+
+state 50
+	rel_expr : add_expr .  (67)
+	add_expr : add_expr . PLUS mult_expr  (73)
+	add_expr : add_expr . MINUS mult_expr  (74)
+
+	PLUS  shift 88
+	MINUS  shift 89
+	EQ  reduce 67
+	NEQ  reduce 67
+	LT  reduce 67
+	LE  reduce 67
+	GT  reduce 67
+	GE  reduce 67
+	AND  reduce 67
+	OR  reduce 67
+	ASSIGN  reduce 67
+	PLUSEQ  reduce 67
+	MINUSEQ  reduce 67
+	STAREQ  reduce 67
+	SLASHEQ  reduce 67
+	PERCENTEQ  reduce 67
+	RPAR  reduce 67
+	RBRACKET  reduce 67
+	SEMI  reduce 67
+	COMMA  reduce 67
+
+
+state 51
+	add_expr : mult_expr .  (72)
+	mult_expr : mult_expr . STAR unary_expr  (76)
+	mult_expr : mult_expr . SLASH unary_expr  (77)
+	mult_expr : mult_expr . PERCENT unary_expr  (78)
+
+	STAR  shift 90
+	SLASH  shift 91
+	PERCENT  shift 92
+	PLUS  reduce 72
+	MINUS  reduce 72
+	EQ  reduce 72
+	NEQ  reduce 72
+	LT  reduce 72
+	LE  reduce 72
+	GT  reduce 72
+	GE  reduce 72
+	AND  reduce 72
+	OR  reduce 72
+	ASSIGN  reduce 72
+	PLUSEQ  reduce 72
+	MINUSEQ  reduce 72
+	STAREQ  reduce 72
+	SLASHEQ  reduce 72
+	PERCENTEQ  reduce 72
+	RPAR  reduce 72
+	RBRACKET  reduce 72
+	SEMI  reduce 72
+	COMMA  reduce 72
+
+
+state 52
+	mult_expr : unary_expr .  (75)
+
+	.  reduce 75
+
+
+state 53
+	unary_expr : postfix_expr .  (79)
+	postfix_expr : postfix_expr . LBRACKET expr RBRACKET  (90)
+	postfix_expr : postfix_expr . INC  (91)
+	postfix_expr : postfix_expr . DEC  (92)
+
+	INC  shift 93
+	DEC  shift 94
+	LBRACKET  shift 95
+	PLUS  reduce 79
+	MINUS  reduce 79
+	STAR  reduce 79
+	SLASH  reduce 79
+	PERCENT  reduce 79
+	EQ  reduce 79
+	NEQ  reduce 79
+	LT  reduce 79
+	LE  reduce 79
+	GT  reduce 79
+	GE  reduce 79
+	AND  reduce 79
+	OR  reduce 79
+	ASSIGN  reduce 79
+	PLUSEQ  reduce 79
+	MINUSEQ  reduce 79
+	STAREQ  reduce 79
+	SLASHEQ  reduce 79
+	PERCENTEQ  reduce 79
+	RPAR  reduce 79
+	RBRACKET  reduce 79
+	SEMI  reduce 79
+	COMMA  reduce 79
+
+
+state 54
+	postfix_expr : call_expr .  (88)
+
+	.  reduce 88
+
+
+state 55
+	postfix_expr : primary_expr .  (89)
+
+	.  reduce 89
+
+
+state 56
+	param : type_spec . ID  (29)
+
+	ID  shift 96
+	.  error
+
+
+state 57
+	fundef : type_spec ID LPAR param_list_opt . RPAR block  (10)
+
+	RPAR  shift 97
+	.  error
+
+
+state 58
+	param_list_opt : param_list .  (26)
+
+	.  reduce 26
+
+
+state 59
+	param_list : param .  (27)
+	param_list : param . COMMA param_list  (28)
+
+	COMMA  shift 98
+	RPAR  reduce 27
+
+
+state 60
+	declarator_list : ID .  (8)
+	declarator_list : ID . COMMA declarator_list  (9)
+
+	COMMA  shift 28
+	SEMI  reduce 8
+
+
+state 61
+	declarator_list : ID COMMA declarator_list .  (9)
+
+	.  reduce 9
+
+
+state 62
+	pointer_depth : STAR pointer_depth .  (13)
+
+	.  reduce 13
+
+
+state 63
+	unary_expr : MINUS unary_expr .  (82)
+
+	.  reduce 82
+
+
+state 64
+	unary_expr : STAR unary_expr .  (84)
+
+	.  reduce 84
+
+
+state 65
+	unary_expr : BANG unary_expr .  (83)
+
+	.  reduce 83
+
+
+state 66
+	unary_expr : INC unary_expr .  (80)
+
+	.  reduce 80
+
+
+state 67
+	unary_expr : DEC unary_expr .  (81)
+
+	.  reduce 81
+
+
+state 68
+	unary_expr : LPAR type_spec . RPAR unary_expr  (87)
+
+	RPAR  shift 99
+	.  error
+
+
+state 69
+	primary_expr : LPAR expr . RPAR  (98)
+
+	RPAR  shift 100
+	.  error
+
+
+state 70
+	unary_expr : SIZEOF LPAR . type_spec RPAR  (86)
+	type_attr_list : .  (14)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+
+	type_spec  goto 101
+	type_attr_list  goto 13
+	type_attr  goto 14
+
+
+state 71
+	unary_expr : AMPERSAND unary_expr .  (85)
+
+	.  reduce 85
+
+
+state 72
+	call_expr : ID LPAR . arg_list RPAR  (93)
+	arg_list : .  (100)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	RPAR  reduce 100
+
+	expr  goto 102
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+	arg_list  goto 103
+	non_empty_arg_list  goto 104
+
+
+state 73
+	vardecl : type_spec ID ASSIGN expr SEMI .  (7)
+
+	.  reduce 7
+
+
+state 74
+	or_expr : or_expr OR . and_expr  (61)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	and_expr  goto 105
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 75
+	assign_expr : or_expr ASSIGN . assign_expr  (54)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	assign_expr  goto 106
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 76
+	assign_expr : or_expr PLUSEQ . assign_expr  (55)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	assign_expr  goto 107
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 77
+	assign_expr : or_expr MINUSEQ . assign_expr  (56)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	assign_expr  goto 108
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 78
+	assign_expr : or_expr STAREQ . assign_expr  (57)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	assign_expr  goto 109
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 79
+	assign_expr : or_expr SLASHEQ . assign_expr  (58)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	assign_expr  goto 110
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 80
+	assign_expr : or_expr PERCENTEQ . assign_expr  (59)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	assign_expr  goto 111
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 81
+	and_expr : and_expr AND . eq_expr  (63)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	eq_expr  goto 112
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 82
+	eq_expr : eq_expr EQ . rel_expr  (65)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	rel_expr  goto 113
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 83
+	eq_expr : eq_expr NEQ . rel_expr  (66)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	rel_expr  goto 114
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 84
+	rel_expr : rel_expr LT . add_expr  (68)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	add_expr  goto 115
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 85
+	rel_expr : rel_expr LE . add_expr  (70)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	add_expr  goto 116
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 86
+	rel_expr : rel_expr GT . add_expr  (69)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	add_expr  goto 117
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 87
+	rel_expr : rel_expr GE . add_expr  (71)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	add_expr  goto 118
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 88
+	add_expr : add_expr PLUS . mult_expr  (73)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	mult_expr  goto 119
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 89
+	add_expr : add_expr MINUS . mult_expr  (74)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	mult_expr  goto 120
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 90
+	mult_expr : mult_expr STAR . unary_expr  (76)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 121
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 91
+	mult_expr : mult_expr SLASH . unary_expr  (77)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 122
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 92
+	mult_expr : mult_expr PERCENT . unary_expr  (78)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 123
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 93
+	postfix_expr : postfix_expr INC .  (91)
+
+	.  reduce 91
+
+
+state 94
+	postfix_expr : postfix_expr DEC .  (92)
+
+	.  reduce 92
+
+
+state 95
+	postfix_expr : postfix_expr LBRACKET . expr RBRACKET  (90)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 124
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 96
+	param : type_spec ID .  (29)
+
+	.  reduce 29
+
+
+state 97
+	fundef : type_spec ID LPAR param_list_opt RPAR . block  (10)
+
+	LBRACE  shift 125
+	.  error
+
+	block  goto 126
+
+
+state 98
+	param_list : param COMMA . param_list  (28)
+	type_attr_list : .  (14)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+
+	type_spec  goto 56
+	type_attr_list  goto 13
+	type_attr  goto 14
+	param_list  goto 127
+	param  goto 59
+
+
+state 99
+	unary_expr : LPAR type_spec RPAR . unary_expr  (87)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	unary_expr  goto 128
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 100
+	primary_expr : LPAR expr RPAR .  (98)
+
+	.  reduce 98
+
+
+state 101
+	unary_expr : SIZEOF LPAR type_spec . RPAR  (86)
+
+	RPAR  shift 129
+	.  error
+
+
+state 102
+	non_empty_arg_list : expr .  (102)
+	non_empty_arg_list : expr . COMMA non_empty_arg_list  (103)
+
+	COMMA  shift 130
+	RPAR  reduce 102
+
+
+state 103
+	call_expr : ID LPAR arg_list . RPAR  (93)
+
+	RPAR  shift 131
+	.  error
+
+
+state 104
+	arg_list : non_empty_arg_list .  (101)
+
+	.  reduce 101
+
+
+state 105
+	or_expr : or_expr OR and_expr .  (61)
+	and_expr : and_expr . AND eq_expr  (63)
+
+	AND  shift 81
+	OR  reduce 61
+	ASSIGN  reduce 61
+	PLUSEQ  reduce 61
+	MINUSEQ  reduce 61
+	STAREQ  reduce 61
+	SLASHEQ  reduce 61
+	PERCENTEQ  reduce 61
+	RPAR  reduce 61
+	RBRACKET  reduce 61
+	SEMI  reduce 61
+	COMMA  reduce 61
+
+
+state 106
+	assign_expr : or_expr ASSIGN assign_expr .  (54)
+
+	.  reduce 54
+
+
+state 107
+	assign_expr : or_expr PLUSEQ assign_expr .  (55)
+
+	.  reduce 55
+
+
+state 108
+	assign_expr : or_expr MINUSEQ assign_expr .  (56)
+
+	.  reduce 56
+
+
+state 109
+	assign_expr : or_expr STAREQ assign_expr .  (57)
+
+	.  reduce 57
+
+
+state 110
+	assign_expr : or_expr SLASHEQ assign_expr .  (58)
+
+	.  reduce 58
+
+
+state 111
+	assign_expr : or_expr PERCENTEQ assign_expr .  (59)
+
+	.  reduce 59
+
+
+state 112
+	and_expr : and_expr AND eq_expr .  (63)
+	eq_expr : eq_expr . EQ rel_expr  (65)
+	eq_expr : eq_expr . NEQ rel_expr  (66)
+
+	EQ  shift 82
+	NEQ  shift 83
+	AND  reduce 63
+	OR  reduce 63
+	ASSIGN  reduce 63
+	PLUSEQ  reduce 63
+	MINUSEQ  reduce 63
+	STAREQ  reduce 63
+	SLASHEQ  reduce 63
+	PERCENTEQ  reduce 63
+	RPAR  reduce 63
+	RBRACKET  reduce 63
+	SEMI  reduce 63
+	COMMA  reduce 63
+
+
+state 113
+	eq_expr : eq_expr EQ rel_expr .  (65)
+	rel_expr : rel_expr . LT add_expr  (68)
+	rel_expr : rel_expr . GT add_expr  (69)
+	rel_expr : rel_expr . LE add_expr  (70)
+	rel_expr : rel_expr . GE add_expr  (71)
+
+	LT  shift 84
+	LE  shift 85
+	GT  shift 86
+	GE  shift 87
+	EQ  reduce 65
+	NEQ  reduce 65
+	AND  reduce 65
+	OR  reduce 65
+	ASSIGN  reduce 65
+	PLUSEQ  reduce 65
+	MINUSEQ  reduce 65
+	STAREQ  reduce 65
+	SLASHEQ  reduce 65
+	PERCENTEQ  reduce 65
+	RPAR  reduce 65
+	RBRACKET  reduce 65
+	SEMI  reduce 65
+	COMMA  reduce 65
+
+
+state 114
+	eq_expr : eq_expr NEQ rel_expr .  (66)
+	rel_expr : rel_expr . LT add_expr  (68)
+	rel_expr : rel_expr . GT add_expr  (69)
+	rel_expr : rel_expr . LE add_expr  (70)
+	rel_expr : rel_expr . GE add_expr  (71)
+
+	LT  shift 84
+	LE  shift 85
+	GT  shift 86
+	GE  shift 87
+	EQ  reduce 66
+	NEQ  reduce 66
+	AND  reduce 66
+	OR  reduce 66
+	ASSIGN  reduce 66
+	PLUSEQ  reduce 66
+	MINUSEQ  reduce 66
+	STAREQ  reduce 66
+	SLASHEQ  reduce 66
+	PERCENTEQ  reduce 66
+	RPAR  reduce 66
+	RBRACKET  reduce 66
+	SEMI  reduce 66
+	COMMA  reduce 66
+
+
+state 115
+	rel_expr : rel_expr LT add_expr .  (68)
+	add_expr : add_expr . PLUS mult_expr  (73)
+	add_expr : add_expr . MINUS mult_expr  (74)
+
+	PLUS  shift 88
+	MINUS  shift 89
+	EQ  reduce 68
+	NEQ  reduce 68
+	LT  reduce 68
+	LE  reduce 68
+	GT  reduce 68
+	GE  reduce 68
+	AND  reduce 68
+	OR  reduce 68
+	ASSIGN  reduce 68
+	PLUSEQ  reduce 68
+	MINUSEQ  reduce 68
+	STAREQ  reduce 68
+	SLASHEQ  reduce 68
+	PERCENTEQ  reduce 68
+	RPAR  reduce 68
+	RBRACKET  reduce 68
+	SEMI  reduce 68
+	COMMA  reduce 68
+
+
+state 116
+	rel_expr : rel_expr LE add_expr .  (70)
+	add_expr : add_expr . PLUS mult_expr  (73)
+	add_expr : add_expr . MINUS mult_expr  (74)
+
+	PLUS  shift 88
+	MINUS  shift 89
+	EQ  reduce 70
+	NEQ  reduce 70
+	LT  reduce 70
+	LE  reduce 70
+	GT  reduce 70
+	GE  reduce 70
+	AND  reduce 70
+	OR  reduce 70
+	ASSIGN  reduce 70
+	PLUSEQ  reduce 70
+	MINUSEQ  reduce 70
+	STAREQ  reduce 70
+	SLASHEQ  reduce 70
+	PERCENTEQ  reduce 70
+	RPAR  reduce 70
+	RBRACKET  reduce 70
+	SEMI  reduce 70
+	COMMA  reduce 70
+
+
+state 117
+	rel_expr : rel_expr GT add_expr .  (69)
+	add_expr : add_expr . PLUS mult_expr  (73)
+	add_expr : add_expr . MINUS mult_expr  (74)
+
+	PLUS  shift 88
+	MINUS  shift 89
+	EQ  reduce 69
+	NEQ  reduce 69
+	LT  reduce 69
+	LE  reduce 69
+	GT  reduce 69
+	GE  reduce 69
+	AND  reduce 69
+	OR  reduce 69
+	ASSIGN  reduce 69
+	PLUSEQ  reduce 69
+	MINUSEQ  reduce 69
+	STAREQ  reduce 69
+	SLASHEQ  reduce 69
+	PERCENTEQ  reduce 69
+	RPAR  reduce 69
+	RBRACKET  reduce 69
+	SEMI  reduce 69
+	COMMA  reduce 69
+
+
+state 118
+	rel_expr : rel_expr GE add_expr .  (71)
+	add_expr : add_expr . PLUS mult_expr  (73)
+	add_expr : add_expr . MINUS mult_expr  (74)
+
+	PLUS  shift 88
+	MINUS  shift 89
+	EQ  reduce 71
+	NEQ  reduce 71
+	LT  reduce 71
+	LE  reduce 71
+	GT  reduce 71
+	GE  reduce 71
+	AND  reduce 71
+	OR  reduce 71
+	ASSIGN  reduce 71
+	PLUSEQ  reduce 71
+	MINUSEQ  reduce 71
+	STAREQ  reduce 71
+	SLASHEQ  reduce 71
+	PERCENTEQ  reduce 71
+	RPAR  reduce 71
+	RBRACKET  reduce 71
+	SEMI  reduce 71
+	COMMA  reduce 71
+
+
+state 119
+	add_expr : add_expr PLUS mult_expr .  (73)
+	mult_expr : mult_expr . STAR unary_expr  (76)
+	mult_expr : mult_expr . SLASH unary_expr  (77)
+	mult_expr : mult_expr . PERCENT unary_expr  (78)
+
+	STAR  shift 90
+	SLASH  shift 91
+	PERCENT  shift 92
+	PLUS  reduce 73
+	MINUS  reduce 73
+	EQ  reduce 73
+	NEQ  reduce 73
+	LT  reduce 73
+	LE  reduce 73
+	GT  reduce 73
+	GE  reduce 73
+	AND  reduce 73
+	OR  reduce 73
+	ASSIGN  reduce 73
+	PLUSEQ  reduce 73
+	MINUSEQ  reduce 73
+	STAREQ  reduce 73
+	SLASHEQ  reduce 73
+	PERCENTEQ  reduce 73
+	RPAR  reduce 73
+	RBRACKET  reduce 73
+	SEMI  reduce 73
+	COMMA  reduce 73
+
+
+state 120
+	add_expr : add_expr MINUS mult_expr .  (74)
+	mult_expr : mult_expr . STAR unary_expr  (76)
+	mult_expr : mult_expr . SLASH unary_expr  (77)
+	mult_expr : mult_expr . PERCENT unary_expr  (78)
+
+	STAR  shift 90
+	SLASH  shift 91
+	PERCENT  shift 92
+	PLUS  reduce 74
+	MINUS  reduce 74
+	EQ  reduce 74
+	NEQ  reduce 74
+	LT  reduce 74
+	LE  reduce 74
+	GT  reduce 74
+	GE  reduce 74
+	AND  reduce 74
+	OR  reduce 74
+	ASSIGN  reduce 74
+	PLUSEQ  reduce 74
+	MINUSEQ  reduce 74
+	STAREQ  reduce 74
+	SLASHEQ  reduce 74
+	PERCENTEQ  reduce 74
+	RPAR  reduce 74
+	RBRACKET  reduce 74
+	SEMI  reduce 74
+	COMMA  reduce 74
+
+
+state 121
+	mult_expr : mult_expr STAR unary_expr .  (76)
+
+	.  reduce 76
+
+
+state 122
+	mult_expr : mult_expr SLASH unary_expr .  (77)
+
+	.  reduce 77
+
+
+state 123
+	mult_expr : mult_expr PERCENT unary_expr .  (78)
+
+	.  reduce 78
+
+
+state 124
+	postfix_expr : postfix_expr LBRACKET expr . RBRACKET  (90)
+
+	RBRACKET  shift 132
+	.  error
+
+
+state 125
+	block : LBRACE . var_decl_list instr_list RBRACE  (30)
+	type_attr_list : .  (14)
+	var_decl_list : .  (31)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	MINUS  reduce 31
+	STAR  reduce 31
+	BANG  reduce 31
+	INC  reduce 31
+	DEC  reduce 31
+	LPAR  reduce 31
+	LBRACE  reduce 31
+	RBRACE  reduce 31
+	SEMI  reduce 31
+	RETURN  reduce 31
+	IF  reduce 31
+	WHILE  reduce 31
+	DO  reduce 31
+	FOR  reduce 31
+	SIZEOF  reduce 31
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+	AMPERSAND  reduce 31
+	ID  reduce 31
+	INTCONST  reduce 31
+	FLOATCONST  reduce 31
+	STRINGCONST  reduce 31
+
+	type_spec  goto 133
+	type_attr_list  goto 13
+	type_attr  goto 14
+	var_decl_list  goto 134
+	var_decl  goto 135
+
+
+state 126
+	fundef : type_spec ID LPAR param_list_opt RPAR block .  (10)
+
+	.  reduce 10
+
+
+state 127
+	param_list : param COMMA param_list .  (28)
+
+	.  reduce 28
+
+
+state 128
+	unary_expr : LPAR type_spec RPAR unary_expr .  (87)
+
+	.  reduce 87
+
+
+state 129
+	unary_expr : SIZEOF LPAR type_spec RPAR .  (86)
+
+	.  reduce 86
+
+
+state 130
+	non_empty_arg_list : expr COMMA . non_empty_arg_list  (103)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 102
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+	non_empty_arg_list  goto 136
+
+
+state 131
+	call_expr : ID LPAR arg_list RPAR .  (93)
+
+	.  reduce 93
+
+
+state 132
+	postfix_expr : postfix_expr LBRACKET expr RBRACKET .  (90)
+
+	.  reduce 90
+
+
+state 133
+	var_decl : type_spec . declarator_list SEMI  (33)
+	var_decl : type_spec . ID ASSIGN expr SEMI  (34)
+
+	ID  shift 137
+	.  error
+
+	declarator_list  goto 138
+
+
+state 134
+	block : LBRACE var_decl_list . instr_list RBRACE  (30)
+	instr_list : .  (35)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	LBRACE  shift 125
+	SEMI  shift 139
+	RETURN  shift 140
+	IF  shift 141
+	WHILE  shift 142
+	DO  shift 143
+	FOR  shift 144
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	RBRACE  reduce 35
+
+	expr  goto 145
+	block  goto 146
+	instr_list  goto 147
+	instr  goto 148
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 135
+	var_decl_list : var_decl . var_decl_list  (32)
+	type_attr_list : .  (14)
+	var_decl_list : .  (31)
+
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	MINUS  reduce 31
+	STAR  reduce 31
+	BANG  reduce 31
+	INC  reduce 31
+	DEC  reduce 31
+	LPAR  reduce 31
+	LBRACE  reduce 31
+	RBRACE  reduce 31
+	SEMI  reduce 31
+	RETURN  reduce 31
+	IF  reduce 31
+	WHILE  reduce 31
+	DO  reduce 31
+	FOR  reduce 31
+	SIZEOF  reduce 31
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+	AMPERSAND  reduce 31
+	ID  reduce 31
+	INTCONST  reduce 31
+	FLOATCONST  reduce 31
+	STRINGCONST  reduce 31
+
+	type_spec  goto 133
+	type_attr_list  goto 13
+	type_attr  goto 14
+	var_decl_list  goto 149
+	var_decl  goto 135
+
+
+state 136
+	non_empty_arg_list : expr COMMA non_empty_arg_list .  (103)
+
+	.  reduce 103
+
+
+state 137
+	declarator_list : ID .  (8)
+	declarator_list : ID . COMMA declarator_list  (9)
+	var_decl : type_spec ID . ASSIGN expr SEMI  (34)
+
+	ASSIGN  shift 150
+	COMMA  shift 28
+	SEMI  reduce 8
+
+
+state 138
+	var_decl : type_spec declarator_list . SEMI  (33)
+
+	SEMI  shift 151
+	.  error
+
+
+state 139
+	instr : SEMI .  (38)
+
+	.  reduce 38
+
+
+state 140
+	instr : RETURN . expr SEMI  (40)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 152
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 141
+	instr : IF . LPAR expr RPAR instr ELSE instr  (41)
+	instr : IF . LPAR expr RPAR instr  (42)
+
+	LPAR  shift 153
+	.  error
+
+
+state 142
+	instr : WHILE . LPAR expr RPAR instr  (43)
+
+	LPAR  shift 154
+	.  error
+
+
+state 143
+	instr : DO . instr WHILE LPAR expr RPAR SEMI  (44)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	LBRACE  shift 125
+	SEMI  shift 139
+	RETURN  shift 140
+	IF  shift 141
+	WHILE  shift 142
+	DO  shift 143
+	FOR  shift 144
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 145
+	block  goto 146
+	instr  goto 155
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 144
+	instr : FOR . LPAR for_init SEMI expr_opt SEMI expr_opt RPAR instr  (45)
+
+	LPAR  shift 156
+	.  error
+
+
+state 145
+	instr : expr . SEMI  (37)
+
+	SEMI  shift 157
+	.  error
+
+
+state 146
+	instr : block .  (39)
+
+	.  reduce 39
+
+
+state 147
+	block : LBRACE var_decl_list instr_list . RBRACE  (30)
+
+	RBRACE  shift 158
+	.  error
+
+
+state 148
+	instr_list : instr . instr_list  (36)
+	instr_list : .  (35)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	LBRACE  shift 125
+	SEMI  shift 139
+	RETURN  shift 140
+	IF  shift 141
+	WHILE  shift 142
+	DO  shift 143
+	FOR  shift 144
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	RBRACE  reduce 35
+
+	expr  goto 145
+	block  goto 146
+	instr_list  goto 159
+	instr  goto 148
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 149
+	var_decl_list : var_decl var_decl_list .  (32)
+
+	.  reduce 32
+
+
+state 150
+	var_decl : type_spec ID ASSIGN . expr SEMI  (34)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 160
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 151
+	var_decl : type_spec declarator_list SEMI .  (33)
+
+	.  reduce 33
+
+
+state 152
+	instr : RETURN expr . SEMI  (40)
+
+	SEMI  shift 161
+	.  error
+
+
+state 153
+	instr : IF LPAR . expr RPAR instr ELSE instr  (41)
+	instr : IF LPAR . expr RPAR instr  (42)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 162
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 154
+	instr : WHILE LPAR . expr RPAR instr  (43)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 163
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 155
+	instr : DO instr . WHILE LPAR expr RPAR SEMI  (44)
+
+	WHILE  shift 164
+	.  error
+
+
+state 156
+	instr : FOR LPAR . for_init SEMI expr_opt SEMI expr_opt RPAR instr  (45)
+	type_attr_list : .  (14)
+	for_init : .  (48)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	SIGNED  shift 3
+	UNSIGNED  shift 4
+	SHORT  shift 5
+	LONG  shift 6
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	SEMI  reduce 48
+	VOID  reduce 14
+	CHAR  reduce 14
+	INT  reduce 14
+	FLOAT  reduce 14
+	DOUBLE  reduce 14
+
+	type_spec  goto 165
+	type_attr_list  goto 13
+	type_attr  goto 14
+	for_init  goto 166
+	for_init_expr  goto 167
+	assign_expr  goto 168
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 157
+	instr : expr SEMI .  (37)
+
+	.  reduce 37
+
+
+state 158
+	block : LBRACE var_decl_list instr_list RBRACE .  (30)
+
+	.  reduce 30
+
+
+state 159
+	instr_list : instr instr_list .  (36)
+
+	.  reduce 36
+
+
+state 160
+	var_decl : type_spec ID ASSIGN expr . SEMI  (34)
+
+	SEMI  shift 169
+	.  error
+
+
+state 161
+	instr : RETURN expr SEMI .  (40)
+
+	.  reduce 40
+
+
+state 162
+	instr : IF LPAR expr . RPAR instr ELSE instr  (41)
+	instr : IF LPAR expr . RPAR instr  (42)
+
+	RPAR  shift 170
+	.  error
+
+
+state 163
+	instr : WHILE LPAR expr . RPAR instr  (43)
+
+	RPAR  shift 171
+	.  error
+
+
+state 164
+	instr : DO instr WHILE . LPAR expr RPAR SEMI  (44)
+
+	LPAR  shift 172
+	.  error
+
+
+state 165
+	for_init : type_spec . ID ASSIGN expr  (49)
+	for_init : type_spec . declarator_list  (50)
+
+	ID  shift 173
+	.  error
+
+	declarator_list  goto 174
+
+
+state 166
+	instr : FOR LPAR for_init . SEMI expr_opt SEMI expr_opt RPAR instr  (45)
+
+	SEMI  shift 175
+	.  error
+
+
+state 167
+	for_init : for_init_expr .  (51)
+
+	.  reduce 51
+
+
+state 168
+	for_init_expr : assign_expr .  (52)
+
+	.  reduce 52
+
+
+state 169
+	var_decl : type_spec ID ASSIGN expr SEMI .  (34)
+
+	.  reduce 34
+
+
+state 170
+	instr : IF LPAR expr RPAR . instr ELSE instr  (41)
+	instr : IF LPAR expr RPAR . instr  (42)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	LBRACE  shift 125
+	SEMI  shift 139
+	RETURN  shift 140
+	IF  shift 141
+	WHILE  shift 142
+	DO  shift 143
+	FOR  shift 144
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 145
+	block  goto 146
+	instr  goto 176
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 171
+	instr : WHILE LPAR expr RPAR . instr  (43)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	LBRACE  shift 125
+	SEMI  shift 139
+	RETURN  shift 140
+	IF  shift 141
+	WHILE  shift 142
+	DO  shift 143
+	FOR  shift 144
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 145
+	block  goto 146
+	instr  goto 177
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 172
+	instr : DO instr WHILE LPAR . expr RPAR SEMI  (44)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 178
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 173
+	declarator_list : ID .  (8)
+	declarator_list : ID . COMMA declarator_list  (9)
+	for_init : type_spec ID . ASSIGN expr  (49)
+
+	ASSIGN  shift 179
+	COMMA  shift 28
+	SEMI  reduce 8
+
+
+state 174
+	for_init : type_spec declarator_list .  (50)
+
+	.  reduce 50
+
+
+state 175
+	instr : FOR LPAR for_init SEMI . expr_opt SEMI expr_opt RPAR instr  (45)
+	expr_opt : .  (46)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	SEMI  reduce 46
+
+	expr  goto 180
+	expr_opt  goto 181
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 176
+	instr : IF LPAR expr RPAR instr . ELSE instr  (41)
+	instr : IF LPAR expr RPAR instr .  (42)
+
+	.  reduce 42
+
+
+state 177
+	instr : WHILE LPAR expr RPAR instr .  (43)
+
+	.  reduce 43
+
+
+state 178
+	instr : DO instr WHILE LPAR expr . RPAR SEMI  (44)
+
+	RPAR  shift 183
+	.  error
+
+
+state 179
+	for_init : type_spec ID ASSIGN . expr  (49)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 184
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 180
+	expr_opt : expr .  (47)
+
+	.  reduce 47
+
+
+state 181
+	instr : FOR LPAR for_init SEMI expr_opt . SEMI expr_opt RPAR instr  (45)
+
+	SEMI  shift 185
+	.  error
+
+
+state 182
+	instr : IF LPAR expr RPAR instr ELSE . instr  (41)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	LBRACE  shift 125
+	SEMI  shift 139
+	RETURN  shift 140
+	IF  shift 141
+	WHILE  shift 142
+	DO  shift 143
+	FOR  shift 144
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 145
+	block  goto 146
+	instr  goto 186
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 183
+	instr : DO instr WHILE LPAR expr RPAR . SEMI  (44)
+
+	SEMI  shift 187
+	.  error
+
+
+state 184
+	for_init : type_spec ID ASSIGN expr .  (49)
+
+	.  reduce 49
+
+
+state 185
+	instr : FOR LPAR for_init SEMI expr_opt SEMI . expr_opt RPAR instr  (45)
+	expr_opt : .  (46)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	RPAR  reduce 46
+
+	expr  goto 180
+	expr_opt  goto 188
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 186
+	instr : IF LPAR expr RPAR instr ELSE instr .  (41)
+
+	.  reduce 41
+
+
+state 187
+	instr : DO instr WHILE LPAR expr RPAR SEMI .  (44)
+
+	.  reduce 44
+
+
+state 188
+	instr : FOR LPAR for_init SEMI expr_opt SEMI expr_opt . RPAR instr  (45)
+
+	RPAR  shift 189
+	.  error
+
+
+state 189
+	instr : FOR LPAR for_init SEMI expr_opt SEMI expr_opt RPAR . instr  (45)
+
+	MINUS  shift 32
+	STAR  shift 33
+	BANG  shift 34
+	INC  shift 35
+	DEC  shift 36
+	LPAR  shift 37
+	LBRACE  shift 125
+	SEMI  shift 139
+	RETURN  shift 140
+	IF  shift 141
+	WHILE  shift 142
+	DO  shift 143
+	FOR  shift 144
+	SIZEOF  shift 38
+	AMPERSAND  shift 39
+	ID  shift 40
+	INTCONST  shift 41
+	FLOATCONST  shift 42
+	STRINGCONST  shift 43
+	.  error
+
+	expr  goto 145
+	block  goto 146
+	instr  goto 190
+	assign_expr  goto 45
+	or_expr  goto 46
+	and_expr  goto 47
+	eq_expr  goto 48
+	rel_expr  goto 49
+	add_expr  goto 50
+	mult_expr  goto 51
+	unary_expr  goto 52
+	postfix_expr  goto 53
+	call_expr  goto 54
+	primary_expr  goto 55
+
+
+state 190
+	instr : FOR LPAR for_init SEMI expr_opt SEMI expr_opt RPAR instr .  (45)
+
+	.  reduce 45
+
+
+60 terminals, 38 nonterminals
+105 grammar rules, 191 states
