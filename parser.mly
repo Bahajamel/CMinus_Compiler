@@ -7,6 +7,39 @@ let make_for init cond step body =
   | `Decl d -> Block([d], [For(None, cond, step, body)])
   | `None -> For(None, cond, step, body)
 
+(* Helpers to build ctype from attributes + base type *)
+
+let has_attr a attrs =
+  List.exists (fun x -> x = a) attrs
+
+(* Normalize integer type: choose one of Int / Unsigned / Short / Long *)
+let normalize_int_type attrs =
+  if has_attr Unsigned attrs then Unsigned
+  else if has_attr Long attrs then Long
+  else if has_attr Short attrs then Short
+  else (* default / signed *) Int
+
+(* For float/double we simply ignore modifiers here.
+   Note: C doesn't define "long float"; only "long double".
+   With this AST we can't represent "long float" distinctly. *)
+let normalize_float_type attrs base =
+  match base with
+  | Float -> Float
+  | Double -> Double
+  | _ -> base
+
+let make_ctype attrs base =
+  match base with
+  | Void -> Void
+  | Char -> Char
+  | Int -> normalize_int_type attrs
+  | Float | Double as b -> normalize_float_type attrs b
+  | Signed | Unsigned | Short | Long ->
+      (* Should not happen, base is always from base_type_keyword *)
+      Int
+
+let rec add_pointers t depth =
+  if depth <= 0 then t else add_pointers (Pointer t) (depth - 1)
 %}
 
 /* Tokens */
@@ -42,23 +75,26 @@ let make_for init cond step body =
 
 %%
 
-/* Point d'entrée */
+/* ---------------------------------------------
+   Fichier
+----------------------------------------------*/
 file:
   | decl_list EOF { $1 }
 ;
 
 decl_list:
-  | /* vide */ { [] }
-  | decl decl_list { $1 :: $2 }
+  | /* vide */          { [] }
+  | decl decl_list      { $1 :: $2 }
 ;
 
-/* Déclarations globales */
+/* ---------------------------------------------
+   Déclarations globales
+----------------------------------------------*/
 decl:
-  | vardecl { $1 }
-  | fundef  { $1 }
+  | vardecl             { $1 }
+  | fundef              { $1 }
 ;
 
-/* Déclarations de variables globales */
 vardecl:
   | type_spec declarator_list SEMI
       { VarDecl($1, $2) }
@@ -66,39 +102,31 @@ vardecl:
       { VarDeclInit($1, $2, $4) }
 ;
 
-/* Liste de déclarateurs (pour int x, y, z;) */
 declarator_list:
   | ID                       { [$1] }
   | ID COMMA declarator_list { $1 :: $3 }
 ;
 
-/* Définition de fonction */
+/* ---------------------------------------------
+   Fonctions
+----------------------------------------------*/
 fundef:
   | type_spec ID LPAR param_list_opt RPAR block
       { FunDef($1, $2, $4, $6) }
 ;
 
-/* Spécificateur de type complet */
+/* ---------- Types ---------- */
+
+/* full type = attributes + base + pointer depth */
 type_spec:
-  | base_type pointer_depth 
-      { List.fold_left (fun acc _ -> Pointer acc) $1 $2 }
+  | type_attr_list base_type_keyword pointer_depth
+      { add_pointers (make_ctype $1 $2) $3 }
 ;
 
-/* Niveau de pointeur (*, **, ***, etc.) */
-pointer_depth:
-  | /* vide */           { [] }
-  | STAR pointer_depth   { () :: $2 }
-;
-
-/* Type de base avec attributs optionnels */
-base_type:
-  | type_attr_list base_type_keyword 
-      { $2 }
-;
-
+/* Modifiers list (signed/unsigned/short/long) */
 type_attr_list:
-  | /* vide */                   { [] }
-  | type_attr type_attr_list     { $1 :: $2 }
+  | /* vide */                 { [] }
+  | type_attr type_attr_list   { $1 :: $2 }
 ;
 
 type_attr:
@@ -116,7 +144,15 @@ base_type_keyword:
   | DOUBLE { Double }
 ;
 
-/* Paramètres de fonction */
+/* Pointer depth: count '*' */
+pointer_depth:
+  | /* vide */           { 0 }
+  | STAR pointer_depth   { 1 + $2 }
+;
+
+/* ---------------------------------------------
+   Paramètres de fonction
+----------------------------------------------*/
 param_list_opt:
   | /* vide */ { [] }
   | param_list { $1 }
@@ -131,16 +167,17 @@ param:
   | type_spec ID { ($1, $2) }
 ;
 
-/* Bloc d'instructions */
+/* ---------------------------------------------
+   Blocs
+----------------------------------------------*/
 block:
   | LBRACE var_decl_list instr_list RBRACE 
       { Block($2, $3) }
 ;
 
-/* Déclarations de variables locales */
 var_decl_list:
-  | /* vide */                 { [] }
-  | var_decl var_decl_list     { $1 :: $2 }
+  | /* vide */               { [] }
+  | var_decl var_decl_list   { $1 :: $2 }
 ;
 
 var_decl:
@@ -150,14 +187,23 @@ var_decl:
       { VarDeclInit($1, $2, $4) }
 ;
 
-/* Liste d'instructions */
 instr_list:
-  | /* vide */             { [] }
-  | instr instr_list       { $1 :: $2 }
+  | /* vide */         { [] }
+  | instr instr_list   { $1 :: $2 }
 ;
 
-/* Instructions */
+/* ---------------------------------------------
+   Instructions (dangling else : matched / unmatched)
+----------------------------------------------*/
+
+/* Une instruction est soit "matched" soit "unmatched" */
 instr:
+  | matched_instr   { $1 }
+  | unmatched_instr { $1 }
+;
+
+/* matched_instr : tous les if ont un else fixé */
+matched_instr:
   | expr SEMI 
       { Expr($1) }
   | SEMI 
@@ -166,16 +212,39 @@ instr:
       { $1 }
   | RETURN expr SEMI 
       { Return($2) }
-  | IF LPAR expr RPAR instr ELSE instr
-      { If($3, $5, Some $7) }
-  | IF LPAR expr RPAR instr %prec ELSE
-      { If($3, $5, None) }
-  | WHILE LPAR expr RPAR instr
+
+  | WHILE LPAR expr RPAR matched_instr
       { While($3, $5) }
-  | DO instr WHILE LPAR expr RPAR SEMI
+
+  | DO matched_instr WHILE LPAR expr RPAR SEMI
       { DoWhile($2, $5) }
-  | FOR LPAR for_init SEMI expr_opt SEMI expr_opt RPAR instr
-    { make_for $3 $5 $7 $9 }
+
+  | FOR LPAR for_init SEMI expr_opt SEMI expr_opt RPAR matched_instr
+      { make_for $3 $5 $7 $9 }
+
+  | IF LPAR expr RPAR matched_instr ELSE matched_instr
+      { If($3, $5, Some $7) }
+;
+
+/* unmatched_instr : if susceptibles de "manger" un else plus loin */
+unmatched_instr:
+  /* if sans else : then = instr (matched ou unmatched) */
+  | IF LPAR expr RPAR instr
+      { If($3, $5, None) }
+
+  /* forme canonique du dangling else */
+  | IF LPAR expr RPAR matched_instr ELSE unmatched_instr
+      { If($3, $5, Some $7) }
+
+  /* boucles dont le corps peut contenir un if pendant */
+  | WHILE LPAR expr RPAR unmatched_instr
+      { While($3, $5) }
+
+  | DO unmatched_instr WHILE LPAR expr RPAR SEMI
+      { DoWhile($2, $5) }
+
+  | FOR LPAR for_init SEMI expr_opt SEMI expr_opt RPAR unmatched_instr
+      { make_for $3 $5 $7 $9 }
 ;
 
 expr_opt:
@@ -183,7 +252,9 @@ expr_opt:
   | expr       { Some $1 }
 ;
 
-/* Initialisation du for : peut être une expression, une déclaration sans SEMI, ou vide */
+/* ---------------------------------------------
+   For init
+----------------------------------------------*/
 for_init:
   | /* vide */ 
       { `None }
@@ -195,12 +266,13 @@ for_init:
       { `Expr $1 }
 ;
 
-/* Expression dans l'initialisation du for (priorité plus basse pour éviter conflits) */
 for_init_expr:
   | assign_expr { $1 }
 ;
 
-/* Expression d'affectation (et expressions de priorité inférieure) */
+/* ---------------------------------------------
+   Expressions
+----------------------------------------------*/
 assign_expr:
   | or_expr 
       { $1 }
@@ -289,25 +361,35 @@ unary_expr:
       { Cast($2, $4) }
 ;
 
+/* postfix_expr: on met l'appel avant l'identifiant pour éviter les conflits */
 postfix_expr:
+  | call_expr
+      { $1 }
   | primary_expr 
       { $1 }
   | postfix_expr LBRACKET expr RBRACKET
       { ArrayAccess($1, $3) }
-  | ID LPAR arg_list RPAR
-      { Call($1, $3) }
   | postfix_expr INC
       { UnOp("post++", $1) }
   | postfix_expr DEC
       { UnOp("post--", $1) }
 ;
 
+/* Appels */
+call_expr:
+  | ID LPAR arg_list RPAR
+      { Call($1, $3) }
+;
+
+/* ---------------------------------------------
+   Primaires + concaténation de chaînes
+----------------------------------------------*/
 primary_expr:
   | INTCONST 
       { Const(IntConst $1) }
   | FLOATCONST 
       { Const(FloatConst $1) }
-  | STRINGCONST 
+  | string_literal
       { Const(StringConst $1) }
   | ID 
       { Id $1 }
@@ -315,18 +397,27 @@ primary_expr:
       { Parens $2 }
 ;
 
-/* Expressions - point d'entrée général */
+/* "a", "a" "b", "a" "b" "c" ... (y compris sur plusieurs lignes) */
+string_literal:
+  | STRINGCONST
+      { $1 }
+  | string_literal STRINGCONST
+      { $1 ^ $2 }
+;
+
 expr:
   | assign_expr { $1 }
 ;
 
-/* Arguments d'appel de fonction */
+/* ---------------------------------------------
+   Arguments de fonction
+----------------------------------------------*/
 arg_list:
-  | /* vide */           { [] }
-  | non_empty_arg_list   { $1 }
+  | /* vide */         { [] }
+  | non_empty_arg_list { $1 }
 ;
 
 non_empty_arg_list:
-  | assign_expr                             { [$1] }
-  | assign_expr COMMA non_empty_arg_list    { $1 :: $3 }
+  | expr                          { [$1] }
+  | expr COMMA non_empty_arg_list { $1 :: $3 }
 ;
