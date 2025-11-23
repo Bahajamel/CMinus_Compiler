@@ -127,7 +127,7 @@ let rec check_instr env = function
       check_instr env body
 
 (* Vérification globale du fichier (liste de déclarations) *)
-let check_scope (file : decl list) =
+(*let check_scope (file : decl list) =
   (* Étape 1 : pré-collecter les signatures des fonctions *)
   let env_with_funcs =
     List.fold_left (fun env decl ->
@@ -197,4 +197,51 @@ let check_scope (file : decl list) =
     | VarDeclInit _ -> ()
   ) file;
 
+  Printf.printf "Scope checking OK !\n"*)
+  let check_scope (file : decl list) =
+  (* Traiter les déclarations dans l'ordre, sans pré-collecte *)
+  let rec check_decls env = function
+    | [] -> ()
+    | decl :: rest ->
+        match decl with
+        (* Variables globales *)
+        | VarDecl(t, names) ->
+            let env' = List.fold_left (fun e n -> add_var e n t) env names in
+            check_decls env' rest
+        
+        | VarDeclInit(t, name, init) ->
+            check_expr env init;  (* Vérifier avec l'env ACTUEL *)
+            let env' = add_var env name t in
+            check_decls env' rest
+        
+        (* Fonctions : ajouter la signature PUIS vérifier le corps *)
+        | FunDef(ret_type, name, params, body) ->
+            let param_types = List.map fst params in
+            let env' = add_func env name ret_type param_types in
+            
+            (* Vérifier le corps avec l'environnement qui contient la fonction *)
+            let env_fun = { env' with scope = StringSet.empty } in
+            let env_with_params =
+              List.fold_left (fun e (t,n) -> add_var e n t) env_fun params
+            in
+            (match body with
+             | Block(local_decls, instrs) ->
+                 let env_body =
+                   List.fold_left (fun e d ->
+                     match d with
+                     | VarDecl(t, names) ->
+                         List.fold_left (fun e n -> add_var e n t) e names
+                     | VarDeclInit(t, name, init) ->
+                         check_expr e init;
+                         add_var e name t
+                     | FunDef _ -> e
+                   ) env_with_params local_decls
+                 in
+                 List.iter (check_instr env_body) instrs
+             | _ -> check_instr env_with_params body);
+            
+            (* Continuer avec l'environnement enrichi *)
+            check_decls env' rest
+  in
+  check_decls empty_env file;
   Printf.printf "Scope checking OK !\n"

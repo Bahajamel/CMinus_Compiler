@@ -11,6 +11,11 @@ let parse_with_error lexbuf =
       Printf.fprintf stderr "%a: lexical error: %s\n"
         print_position lexbuf msg;
       exit 1
+  
+  | Parsing.Parse_error ->  
+      Printf.fprintf stderr "%a: syntax error\n" 
+        print_position lexbuf;
+      exit 1
   | Failure msg ->
       Printf.fprintf stderr "%a: syntax error: %s\n"
         print_position lexbuf msg;

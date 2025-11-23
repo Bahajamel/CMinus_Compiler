@@ -29,9 +29,6 @@ let rec simple_eq a b =
 (* compatibilité (promotion int -> float autorisée) *)
 let compatible expected actual =
   simple_eq expected actual
-  || match expected, actual with
-     | TFloat, TInt -> true
-     | _ -> false
 
 let result_arith t1 t2 =
   match t1, t2 with
@@ -169,6 +166,8 @@ let rec check_expr env = function
       end
 
   | Call(name, args) ->
+    if StringMap.mem name env.vars then
+        raise (TypeError ("Cannot call variable "^name));
       if not (StringMap.mem name env.funcs) then
         raise (TypeError ("Unknown function "^name));
       let (ret, params) = StringMap.find name env.funcs in

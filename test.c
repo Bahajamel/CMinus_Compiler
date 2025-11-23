@@ -1,8 +1,7 @@
-int f(int a, double b) {
-  return a + (int) b;
-}
+int f() { return 1; }
 
-void g(int n) {
-  int m;
-  m = f(m + n);
+int main() {
+  int f;
+  f = f();
+  return 0;
 }
