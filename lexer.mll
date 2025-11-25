@@ -27,7 +27,6 @@ let float_1 = sign? digit+ '.' digit* exponent?
 let float_2 = sign? digit* '.' digit+ exponent?
 let float_3 = sign? digit+ exponent
 let float_const = float_1 | float_2 | float_3
-let bad_octal = '0' ['0'-'7']* ['8'-'9'] digit*
 
 rule token = parse
   | [' ' '\t' '\r' '\n']+     { token lexbuf }
@@ -95,12 +94,6 @@ rule token = parse
   | "unsigned" { UNSIGNED }
   | "short"    { SHORT }
   | "long"     { LONG }
-
-  | bad_octal as s {
-      raise (Lexing_error
-        (Printf.sprintf "Invalid octal constant '%s' at line %d (octal digits must be 0-7)"
-           s lexbuf.lex_curr_p.pos_lnum))
-    }
 
   (* nombres flottants *)
   | float_const as f { FLOATCONST(float_of_string f) }

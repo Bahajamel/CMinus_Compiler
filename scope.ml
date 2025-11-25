@@ -2,6 +2,8 @@ open Ast
 module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)
 
+exception Scope_error of string
+
 (* Environnement = variables + fonctions + scope courant *)
 type env = {
   vars  : ctype StringMap.t;                 (* nom -> type des variables visibles *)
@@ -20,7 +22,7 @@ let empty_env = {
    MAIS autorise le shadowing de variables des blocs extérieurs. *)
 let add_var env name typ =
   if StringSet.mem name env.scope then
-    failwith ("Variable "^name^" redeclared")
+    raise (Scope_error ("Variable "^name^" redeclared"))
   else
     {
       env with
@@ -34,7 +36,7 @@ let add_var env name typ =
    add_var suffit si on réinitialise bien scope au début de la fonction. *)
 let add_var_shadowing env name typ =
   if StringSet.mem name env.scope then
-    failwith ("Variable "^name^" redeclared")
+    raise (Scope_error ("Variable "^name^" redeclared"))
   else
     {
       env with
@@ -45,14 +47,14 @@ let add_var_shadowing env name typ =
 (* Ajoute une fonction globale *)
 let add_func env name ret_type param_types =
   if StringMap.mem name env.funcs then
-    failwith ("Function "^name^" redeclared");
+    raise (Scope_error("Function "^name^" redeclared"));
   { env with funcs = StringMap.add name (ret_type, param_types) env.funcs }
 
 (* Vérification des expressions (contrôles basiques) *)
 let rec check_expr env = function
   | Id x ->
       if not (StringMap.mem x env.vars) then
-        failwith ("Variable "^x^" used but not declared")
+       raise(Scope_error("Variable "^x^" used but not declared"))
   | Const _ -> ()
   | BinOp(_, e1, e2) ->
       check_expr env e1;
@@ -60,14 +62,9 @@ let rec check_expr env = function
   | UnOp(_, e) ->
       check_expr env e
   | Call(name, args) ->
-      if not (StringMap.mem name env.funcs) then
-        failwith ("Call to unknown function "^name)
-      else
-        let (_ret, param_types) = StringMap.find name env.funcs in
-        if List.length param_types <> List.length args then
-          failwith ("Function "^name^" called with wrong number of arguments")
-        else
-          List.iter (check_expr env) args
+    if not (StringMap.mem name env.funcs) then
+        raise(Scope_error("Call to unknown function "^name));
+    List.iter (check_expr env) args
   | ArrayAccess(arr, idx) ->
       check_expr env arr;
       check_expr env idx
