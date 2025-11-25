@@ -2,6 +2,7 @@ open Ast
 module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)
 
+(* Exception levée lorsqu'une erreur de portée survient *)
 exception Scope_error of string
 
 (* Environnement = variables + fonctions + scope courant *)
@@ -10,7 +11,7 @@ type env = {
   funcs : (ctype * ctype list) StringMap.t;  (* nom -> (ret_type, param_types) *)
   scope : StringSet.t;                       (* noms déclarés dans le bloc courant *)
 }
-
+(* Environnement vide au début du programme *)
 let empty_env = {
   vars  = StringMap.empty;
   funcs = StringMap.empty;
@@ -86,6 +87,7 @@ let rec check_instr env = function
       (* Nouveau bloc : même vars (on voit les variables extérieures),
          mais scope réinitialisé (noms déclarés dans CE bloc uniquement). *)
       let env_block_base = { env with scope = StringSet.empty } in
+      (* On ajoute les déclarations locales dans l'ordre *)
       let env_local =
         List.fold_left (fun e decl ->
           match decl with
@@ -96,7 +98,7 @@ let rec check_instr env = function
               let e = add_var e name t in
               check_expr e init;   (* Vérification de l'expression d'init *)
               e
-
+          (* Les fonctions locales ne sont pas autorisées dans notre langage *)
           | FunDef _ -> e
         ) env_block_base decls
       in
@@ -123,80 +125,8 @@ let rec check_instr env = function
       (match step with Some e -> check_expr env e | None -> ());
       check_instr env body
 
-(* Vérification globale du fichier (liste de déclarations) *)
-(*let check_scope (file : decl list) =
-  (* Étape 1 : pré-collecter les signatures des fonctions *)
-  let env_with_funcs =
-    List.fold_left (fun env decl ->
-      match decl with
-      | FunDef(ret_type, name, params, _) ->
-          let param_types = List.map fst params in
-          add_func env name ret_type param_types
-      | _ -> env
-    ) empty_env file
-  in
-
-  (* Étape 2 : ajouter les variables globales (et vérifier les initialisations) *)
-  let env_globals =
-    List.fold_left (fun env decl ->
-      match decl with
-      | VarDecl(t, names) ->
-          List.fold_left (fun e n -> add_var e n t) env names
-
-      | VarDeclInit(t, name, init) ->
-          let e = add_var env name t in
-          (* on veut avoir aussi toutes les fonctions visibles pour init *)
-          let e_for_init = { e with funcs = env_with_funcs.funcs } in
-          check_expr e_for_init init;
-          e
-
-      | FunDef _ -> env
-    ) env_with_funcs file
-  in
-
-  (* Étape 3 : vérifier chaque fonction (corps) *)
-  List.iter (fun decl ->
-    match decl with
-    | FunDef(ret_type, name, params, body) ->
-        (* nouvel environnement pour la fonction :
-           - mêmes vars que globals (elles sont visibles)
-           - scope RÉINITIALISÉ (nouveau scope de fonction)
-           - on ajoute les paramètres dans ce scope *)
-        let env_fun_base = { env_globals with scope = StringSet.empty } in
-        let env_fun =
-          List.fold_left (fun e (t,n) -> add_var e n t) env_fun_base params
-        in
-        (match body with
-         | Block(local_decls, instrs) ->
-             (* le bloc du corps de fonction est dans le même scope que les params
-                et les premières déclarations locales *)
-             let env_block =
-               List.fold_left (fun e decl ->
-                 match decl with
-                 | VarDecl(t, names) ->
-                     List.fold_left (fun e n -> add_var e n t) e names
-
-                 | VarDeclInit(t, name, init) ->
-                     let e = add_var e name t in
-                     check_expr e init;
-                     e
-
-                 | FunDef _ -> e
-               ) env_fun local_decls
-             in
-             List.iter (check_instr env_block) instrs
-
-         | _ ->
-             (* cas théorique si body n'est pas un Block *)
-             check_instr env_fun body)
-
-    | VarDecl _ -> ()
-    | VarDeclInit _ -> ()
-  ) file;
-
-  Printf.printf "Scope checking OK !\n"*)
   let check_scope (file : decl list) =
-  (* Traiter les déclarations dans l'ordre, sans pré-collecte *)
+  (* Traiter les déclarations dans l'ordre du programme *)
   let rec check_decls env = function
     | [] -> ()
     | decl :: rest ->
@@ -221,6 +151,7 @@ let rec check_instr env = function
             let env_with_params =
               List.fold_left (fun e (t,n) -> add_var e n t) env_fun params
             in
+            (* Vérifier le corps *)
             (match body with
              | Block(local_decls, instrs) ->
                  let env_body =
@@ -237,7 +168,7 @@ let rec check_instr env = function
                  List.iter (check_instr env_body) instrs
              | _ -> check_instr env_with_params body);
             
-            (* Continuer avec l'environnement enrichi *)
+            (* Continuer avec l'environnement mis à jour  *)
             check_decls env' rest
   in
   check_decls empty_env file;

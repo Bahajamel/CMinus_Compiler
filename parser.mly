@@ -27,7 +27,7 @@ let normalize_float_type attrs base =
   | Float -> Float
   | Double -> Double
   | _ -> base
-
+(* Combine attributs + type de base *)
 let make_ctype attrs base =
   match base with
   | Void -> Void
@@ -41,7 +41,7 @@ let make_ctype attrs base =
 let rec add_pointers t depth =
   if depth <= 0 then t else add_pointers (Pointer t) (depth - 1)
 %}
-
+(* -------------------------- TOKENS et PRIORITÉS ----------------------- *)
 /* Tokens */
 %token PLUS MINUS STAR SLASH PERCENT
 %token EQ NEQ LT LE GT GE AND OR BANG
@@ -226,7 +226,7 @@ matched_instr:
       { If($3, $5, Some $7) }
 ;
 
-/* unmatched_instr : if susceptibles de "manger" un else plus loin */
+/* Gestion du dangling-else */
 unmatched_instr:
   /* if sans else : then = instr (matched ou unmatched) */
   | IF LPAR expr RPAR instr
@@ -352,9 +352,9 @@ unary_expr:
   | BANG unary_expr
       { UnOp("!", $2) }
   | STAR unary_expr
-      { UnOp("*", $2) }
+      { UnOp("*", $2) }             /* déréférencement */
   | AMPERSAND unary_expr
-      { UnOp("&", $2) }
+      { UnOp("&", $2) }            /* adresse */
   | SIZEOF LPAR type_spec RPAR
       { SizeOf($3) }
   | LPAR type_spec RPAR unary_expr
@@ -397,7 +397,7 @@ primary_expr:
       { Parens $2 }
 ;
 
-/* "a", "a" "b", "a" "b" "c" ... (y compris sur plusieurs lignes) */
+/* "a" "b" → concaténation automatique */
 string_literal:
   | STRINGCONST
       { $1 }
