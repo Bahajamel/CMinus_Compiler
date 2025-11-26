@@ -41,7 +41,7 @@ let make_ctype attrs base =
 let rec add_pointers t depth =
   if depth <= 0 then t else add_pointers (Pointer t) (depth - 1)
 %}
-(* -------------------------- TOKENS et PRIORITÉS ----------------------- *)
+
 /* Tokens */
 %token PLUS MINUS STAR SLASH PERCENT
 %token EQ NEQ LT LE GT GE AND OR BANG
