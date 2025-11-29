@@ -26,7 +26,7 @@ let rec simple_eq a b =
   | TPointer x, TPointer y -> simple_eq x y
   | _ -> false
 
-(* compatibilité (promotion int -> float autorisée) *)
+
 let compatible expected actual =
   simple_eq expected actual
 
@@ -53,18 +53,6 @@ let empty_env = {
 (* ajout dans le scope courant : interdit redeclaration locale,
    mais autorise shadowing des variables de blocs extérieurs *)
 let add_var env name typ =
-  if StringSet.mem name env.scope then
-    raise (TypeError ("Variable "^name^" redeclared"))
-  else
-    {
-      env with
-      vars  = StringMap.add name typ env.vars;
-      scope = StringSet.add name env.scope;
-    }
-
-(* shadowing explicite (utilisé rarement si besoin),
-   mais on garde aussi la protection "même scope interdit" *)
-let add_var_shadowing env name typ =
   if StringSet.mem name env.scope then
     raise (TypeError ("Variable "^name^" redeclared"))
   else

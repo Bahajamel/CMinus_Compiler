@@ -31,25 +31,12 @@ let add_var env name typ =
       scope = StringSet.add name env.scope;
     }
 
-(* Variante "shadowing" : autorise de remplacer un ancien type
-   dans vars, mais toujours interdit dans le même scope.
-   On va l'utiliser pour les paramètres si besoin, mais en pratique
-   add_var suffit si on réinitialise bien scope au début de la fonction. *)
-let add_var_shadowing env name typ =
-  if StringSet.mem name env.scope then
-    raise (Scope_error ("Variable "^name^" redeclared"))
-  else
-    {
-      env with
-      vars  = StringMap.add name typ env.vars;
-      scope = StringSet.add name env.scope;
-    }
-
 (* Ajoute une fonction globale *)
 let add_func env name ret_type param_types =
   if StringMap.mem name env.funcs then
     raise (Scope_error("Function "^name^" redeclared"));
-  { env with funcs = StringMap.add name (ret_type, param_types) env.funcs }
+  { env with 
+  funcs = StringMap.add name (ret_type, param_types) env.funcs }
 
 (* Vérification des expressions (contrôles basiques) *)
 let rec check_expr env = function
